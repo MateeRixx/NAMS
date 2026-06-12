@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { UserRole } from '@newsflow/shared';
 import { authentication } from '../../middleware/authentication.js';
 import { authorize } from '../../middleware/authorization.js';
-import { validate } from '../../middleware/validation.js';
+import { validate, validateQuery } from '../../middleware/validation.js';
 import {
   createCustomerSchema,
   updateCustomerSchema,
@@ -25,9 +25,15 @@ router.post(
 router.get(
   '/',
   authorize(UserRole.AGENCY_ADMIN, UserRole.AGENCY_STAFF),
-  validate(customerQuerySchema),
+  validateQuery(customerQuerySchema),
   customerController.listCustomers
 );
+router.get(
+  '/delivery-sheet',
+  authorize(UserRole.AGENCY_ADMIN, UserRole.AGENCY_STAFF),
+  customerController.getDeliverySheet
+);
+
 router.get(
   '/:id',
   authorize(UserRole.AGENCY_ADMIN, UserRole.AGENCY_STAFF),

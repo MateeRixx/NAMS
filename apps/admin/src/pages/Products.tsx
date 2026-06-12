@@ -6,46 +6,218 @@ interface Product {
   name: string;
   type: string;
   basePrice: number;
+  description: string | null;
   isActive: boolean;
   createdAt: string;
 }
 
+interface DayRate {
+  id: string;
+  dayOfWeek: number;
+  price: number;
+}
+
+const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const productTypes = ['NEWSPAPER', 'MAGAZINE', 'BUNDLE'];
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [dayRateProduct, setDayRateProduct] = useState<string | null>(null);
+  const [dayRates, setDayRates] = useState<DayRate[]>([]);
+  const [rateForm, setRateForm] = useState<Record<number, string>>({});
+  const [rateSaving, setRateSaving] = useState(false);
 
-  useEffect(() => {
-    client.get('/products')
-      .then((res) => setProducts(res.data.data))
-      .finally(() => setLoading(false));
-  }, []);
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await client.get('/products');
+      setProducts(res.data.data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleSave() {
+    if (!form.name || !form.basePrice) { setFormError('Name and base price are required'); return; }
+    setSaving(true);
+    setFormError('');
+    try {
+      const payload = { name: form.name, type: form.type, basePrice: parseFloat(form.basePrice), description: form.description || undefined };
+      if (editId) {
+        await client.patch(`/products/${editId}`, payload);
+      } else {
+        await client.post('/products', payload);
+      }
+      setShowForm(false);
+      setEditId(null);
+      setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' });
+      await load();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to save product');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(p: Product) {
+    setEditId(p.id);
+    setForm({ name: p.name, type: p.type, basePrice: String(p.basePrice), description: p.description ?? '' });
+    setShowForm(true);
+  }
+
+  async function toggleActive(p: Product) {
+    try {
+      if (p.isActive) {
+        await client.patch(`/products/${p.id}/deactivate`);
+      } else {
+        await client.patch(`/products/${p.id}/activate`);
+      }
+      await load();
+    } catch { /* ignore */ }
+  }
+
+  async function openDayRates(productId: string) {
+    if (dayRateProduct === productId) { setDayRateProduct(null); return; }
+    setDayRateProduct(productId);
+    try {
+      const res = await client.get(`/products/${productId}/rates`);
+      const rates: DayRate[] = res.data.data;
+      setDayRates(rates);
+      const rf: Record<number, string> = {};
+      rates.forEach((r) => { rf[r.dayOfWeek] = String(r.price); });
+      setRateForm(rf);
+    } catch { setDayRates([]); setRateForm({}); }
+  }
+
+  async function saveDayRate(dayOfWeek: number) {
+    const price = rateForm[dayOfWeek];
+    if (!price) return;
+    setRateSaving(true);
+    try {
+      const existing = dayRates.find((r) => r.dayOfWeek === dayOfWeek);
+      if (existing) {
+        await client.patch(`/products/${dayRateProduct}/rates/${existing.id}`, { price: parseFloat(price) });
+      } else {
+        await client.post(`/products/${dayRateProduct}/rates`, { dayOfWeek, price: parseFloat(price) });
+      }
+      const res = await client.get(`/products/${dayRateProduct}/rates`);
+      setDayRates(res.data.data);
+    } finally {
+      setRateSaving(false);
+    }
+  }
 
   return (
     <div>
-      <h1>Products</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ margin: 0 }}>Products</h1>
+        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' }); }}>
+          {showForm ? 'Cancel' : '+ Add Product'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>{editId ? 'Edit Product' : 'New Product'}</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="input-group">
+              <label>Name *</label>
+              <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>Type</label>
+              <select className="select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                {productTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div className="input-group">
+              <label>Base Price (₹) *</label>
+              <input className="input" type="number" step="0.01" min="0" value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>Description</label>
+              <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" />
+            </div>
+          </div>
+          {formError && <p className="error-text">{formError}</p>}
+          <button className="btn btn-primary" style={{ marginTop: '0.75rem' }} onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : editId ? 'Update Product' : 'Create Product'}
+          </button>
+        </div>
+      )}
+
       {loading ? <div className="loading">Loading...</div> : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Base Price</th>
-              <th>Status</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id}>
-                <td>{p.name}</td>
-                <td><span className="badge">{p.type}</span></td>
-                <td>₹{p.basePrice.toFixed(2)}</td>
-                <td><span className={`badge ${p.isActive ? 'badge-active' : 'badge-inactive'}`}>{p.isActive ? 'Active' : 'Inactive'}</span></td>
-                <td>{new Date(p.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div>
+          {products.map((p) => (
+            <div key={p.id} className="card" style={{ marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.name}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    {p.type} &middot; ₹{p.basePrice.toFixed(2)}/day
+                    {p.description && <> &middot; {p.description}</>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <span className={`badge ${p.isActive ? 'badge-active' : 'badge-inactive'}`}>{p.isActive ? 'Active' : 'Inactive'}</span>
+                  <button className="btn btn-sm" onClick={() => startEdit(p)}>Edit</button>
+                  <button className="btn btn-sm" onClick={() => toggleActive(p)}>{p.isActive ? 'Deactivate' : 'Activate'}</button>
+                </div>
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <button className="btn btn-sm" onClick={() => openDayRates(p.id)}>
+                  {dayRateProduct === p.id ? 'Close Day Rates' : 'Day Rates'}
+                </button>
+              </div>
+              {dayRateProduct === p.id && (
+                <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Day-wise Pricing (override base price)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+                    {dayNames.map((name, idx) => (
+                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>{name}</label>
+                        <input
+                          className="input"
+                          style={{ padding: '0.35rem', fontSize: '0.8rem', textAlign: 'center' }}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="--"
+                          value={rateForm[idx] ?? ''}
+                          onChange={(e) => setRateForm({ ...rateForm, [idx]: e.target.value })}
+                        />
+                        <button
+                          className="btn btn-sm"
+                          style={{ fontSize: '0.7rem', padding: '0.2rem 0.4rem' }}
+                          onClick={() => saveDayRate(idx)}
+                          disabled={rateSaving || !rateForm[idx]}
+                        >
+                          Set
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {dayRates.length > 0 && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'center' }}>
+                      {dayRates.filter((r) => r.price > 0).map((r) => `${dayNames[r.dayOfWeek]}: ₹${r.price}`).join(' | ')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+          {products.length === 0 && <div className="loading">No products yet. Add your first product.</div>}
+        </div>
       )}
     </div>
   );

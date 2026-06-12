@@ -18,6 +18,7 @@ router.post('/register', validate(registerSchema), authController.register);
 router.post('/login', validate(loginSchema), authController.login);
 router.post('/otp/send', validate(sendOtpSchema), authController.sendOtp);
 router.post('/otp/verify', validate(verifyOtpSchema), authController.verifyOtp);
+router.post('/customer/otp/verify', validate(verifyOtpSchema), authController.customerVerifyOtp);
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 router.get('/me', authentication, authController.getProfile);
 router.post('/refresh', authentication, authController.refreshToken);

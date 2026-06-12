@@ -117,6 +117,19 @@ export async function updateAddress(
   }
 }
 
+export async function getDeliverySheet(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await customerService.getDeliverySheet(req.user!.agencyId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function deleteAddress(
   req: Request,
   res: Response,

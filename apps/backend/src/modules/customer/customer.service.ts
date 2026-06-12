@@ -1,4 +1,5 @@
 import { NotFoundError, ConflictError } from '@newsflow/shared';
+import prisma from '@newsflow/database';
 import * as customerRepository from './customer.repository.js';
 import type {
   CreateCustomerDto,
@@ -141,6 +142,61 @@ export async function listCustomers(
     ...result,
     items: result.items.map(toCustomerResponse),
   };
+}
+
+export async function getDeliverySheet(
+  agencyId: string
+): Promise<{
+  zones: { id: string; name: string; customers: { name: string; phone: string; address: string; area: string; postalCode: string }[] }[];
+  unzoned: { name: string; phone: string; address: string; area: string; postalCode: string }[];
+  generatedAt: string;
+}> {
+  const customers = await prisma.customer.findMany({
+    where: { agencyId, deletedAt: null, status: 'ACTIVE' },
+    include: {
+      addresses: {
+        where: { isPrimary: true },
+        include: { deliveryZone: { select: { id: true, name: true } } },
+      },
+    },
+    orderBy: { firstName: 'asc' },
+  });
+
+  const zoneMap = new Map<string, { id: string; name: string; customers: { name: string; phone: string; address: string; area: string; postalCode: string }[] }>();
+  const unzoned: { name: string; phone: string; address: string; area: string; postalCode: string }[] = [];
+
+  for (const c of customers) {
+    const entry = {
+      name: `${c.firstName} ${c.lastName}`.trim(),
+      phone: c.phone,
+      address: '',
+      area: '',
+      postalCode: '',
+    };
+
+    const primaryAddr = c.addresses[0];
+    if (primaryAddr) {
+      entry.address = [primaryAddr.houseNumber, primaryAddr.street, primaryAddr.landmark].filter(Boolean).join(', ');
+      entry.area = primaryAddr.area;
+      entry.postalCode = primaryAddr.postalCode;
+
+      if (primaryAddr.deliveryZone) {
+        const zoneId = primaryAddr.deliveryZone.id;
+        if (!zoneMap.has(zoneId)) {
+          zoneMap.set(zoneId, { id: zoneId, name: primaryAddr.deliveryZone.name, customers: [] });
+        }
+        zoneMap.get(zoneId)!.customers.push(entry);
+      } else {
+        unzoned.push(entry);
+      }
+    } else {
+      unzoned.push(entry);
+    }
+  }
+
+  const zones = Array.from(zoneMap.values());
+
+  return { zones, unzoned, generatedAt: new Date().toISOString() };
 }
 
 export async function createAddress(

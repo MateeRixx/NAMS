@@ -3,17 +3,14 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Customers from './pages/Customers';
 import Products from './pages/Products';
 import Subscriptions from './pages/Subscriptions';
+import Invoices from './pages/Invoices';
 import Complaints from './pages/Complaints';
-import DeliveryZones from './pages/DeliveryZones';
-import DeliverySheet from './pages/DeliverySheet';
-import Billing from './pages/Billing';
+import Profile from './pages/Profile';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token, loading } = useAuth();
-  if (loading) return <div className="loading">Loading...</div>;
+  const { token } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -30,13 +27,11 @@ function AppRoutes() {
         }
       >
         <Route path="/" element={<Dashboard />} />
-        <Route path="/customers" element={<Customers />} />
         <Route path="/products" element={<Products />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
+        <Route path="/invoices" element={<Invoices />} />
         <Route path="/complaints" element={<Complaints />} />
-        <Route path="/delivery-zones" element={<DeliveryZones />} />
-        <Route path="/delivery-sheet" element={<DeliverySheet />} />
-        <Route path="/billing" element={<Billing />} />
+        <Route path="/profile" element={<Profile />} />
       </Route>
     </Routes>
   );

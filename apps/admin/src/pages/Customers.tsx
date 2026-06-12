@@ -33,6 +33,11 @@ interface Subscription {
   status: string;
 }
 
+interface DeliveryZone {
+  id: string;
+  name: string;
+}
+
 export default function Customers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState('');
@@ -41,13 +46,70 @@ export default function Customers() {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [form, setForm] = useState({
+    firstName: '', lastName: '', phone: '', email: '',
+    zoneId: '', houseNumber: '', street: '', landmark: '', area: '', city: '', state: '', postalCode: '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  useEffect(() => {
+    client.get('/delivery-zones').then((res) => setZones(res.data.data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
-    client.get('/customers', { params: { search, limit: 50 } })
+    const params: Record<string, string | number> = { limit: 50 };
+    if (search) params.search = search;
+    client.get('/customers', { params })
       .then((res) => setCustomers(res.data.data.items))
       .finally(() => setLoading(false));
   }, [search]);
+
+  async function handleCreate() {
+    if (!form.firstName || !form.lastName || !form.phone) {
+      setFormError('First name, last name and phone are required');
+      return;
+    }
+    if (!form.houseNumber || !form.street || !form.area || !form.city || !form.state || !form.postalCode) {
+      setFormError('Complete address is required for delivery');
+      return;
+    }
+    setSaving(true);
+    setFormError('');
+    try {
+      const custRes = await client.post('/customers', {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        phone: form.phone,
+        email: form.email || undefined,
+      });
+      const customerId = custRes.data.data.id;
+      await client.post(`/customers/${customerId}/addresses`, {
+        zoneId: form.zoneId || undefined,
+        houseNumber: form.houseNumber,
+        street: form.street,
+        landmark: form.landmark || undefined,
+        area: form.area,
+        city: form.city,
+        state: form.state,
+        postalCode: form.postalCode,
+        isPrimary: true,
+      });
+      setShowForm(false);
+      setForm({ firstName: '', lastName: '', phone: '', email: '', zoneId: '', houseNumber: '', street: '', landmark: '', area: '', city: '', state: '', postalCode: '' });
+      const refreshParams: Record<string, string | number> = { limit: 50 };
+      if (search) refreshParams.search = search;
+      const res = await client.get('/customers', { params: refreshParams });
+      setCustomers(res.data.data.items);
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to create customer');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function selectCustomer(id: string) {
     if (selected === id) { setSelected(null); return; }
@@ -64,7 +126,93 @@ export default function Customers() {
 
   return (
     <div>
-      <h1>Customers</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h1 style={{ margin: 0 }}>Customers</h1>
+        <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancel' : '+ Add Customer'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>New Customer</h3>
+
+          <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Personal Details</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="input-group">
+              <label>First Name *</label>
+              <input className="input" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>Last Name *</label>
+              <input className="input" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div className="input-group">
+              <label>Phone *</label>
+              <input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+919876543210" />
+            </div>
+            <div className="input-group">
+              <label>Email</label>
+              <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Optional" />
+            </div>
+          </div>
+
+          <hr style={{ margin: '1rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+          <p style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Delivery Address</p>
+
+          <div className="input-group">
+            <label>Delivery Zone</label>
+            <select className="select" value={form.zoneId} onChange={(e) => setForm({ ...form, zoneId: e.target.value })}>
+              <option value="">No zone (default charge)</option>
+              {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+            </select>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+            <div className="input-group">
+              <label>House / Flat Number *</label>
+              <input className="input" value={form.houseNumber} onChange={(e) => setForm({ ...form, houseNumber: e.target.value })} placeholder="e.g. 42, A-101" />
+            </div>
+            <div className="input-group">
+              <label>Landmark</label>
+              <input className="input" value={form.landmark} onChange={(e) => setForm({ ...form, landmark: e.target.value })} placeholder="Near..." />
+            </div>
+          </div>
+
+          <div className="input-group">
+            <label>Street / Road *</label>
+            <input className="input" value={form.street} onChange={(e) => setForm({ ...form, street: e.target.value })} placeholder="e.g. MG Road, Sector 15" />
+          </div>
+
+          <div className="input-group">
+            <label>Area / Locality *</label>
+            <input className="input" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} placeholder="e.g. Indira Nagar" />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div className="input-group">
+              <label>City *</label>
+              <input className="input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>State *</label>
+              <input className="input" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>Postal Code *</label>
+              <input className="input" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} placeholder="6 digits" />
+            </div>
+          </div>
+
+          {formError && <p className="error-text">{formError}</p>}
+          <button className="btn btn-primary" style={{ marginTop: '0.75rem' }} onClick={handleCreate} disabled={saving}>
+            {saving ? 'Creating...' : 'Create Customer'}
+          </button>
+        </div>
+      )}
+
       <input
         type="text"
         placeholder="Search by name, phone, email or code..."

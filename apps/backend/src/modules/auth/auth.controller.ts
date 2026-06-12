@@ -40,6 +40,20 @@ export async function verifyOtp(req: Request, res: Response, next: NextFunction)
   }
 }
 
+export async function customerVerifyOtp(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const body = req.body as { phone: string; otp: string };
+    const result = await authService.customerVerifyOtp(body.phone, body.otp);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export function resetPassword(_req: Request, res: Response): void {
   res.json({ success: true, data: { message: 'Password reset email sent if account exists' } });
 }

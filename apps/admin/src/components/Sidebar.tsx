@@ -7,6 +7,7 @@ const links = [
   { to: '/subscriptions', label: 'Subscriptions', icon: '📋' },
   { to: '/complaints', label: 'Complaints', icon: '⚠️' },
   { to: '/delivery-zones', label: 'Delivery Zones', icon: '📍' },
+  { to: '/delivery-sheet', label: 'Delivery Sheet', icon: '📋' },
   { to: '/billing', label: 'Billing', icon: '💰' },
 ];
 

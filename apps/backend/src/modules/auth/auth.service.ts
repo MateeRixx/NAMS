@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { ConflictError, NotFoundError, UserRole, type JwtPayload } from '@newsflow/shared';
+import prisma from '@newsflow/database';
 import { config } from '../../config/index.js';
 import { getRedis } from '../../config/redis.js';
 import * as authRepository from './auth.repository.js';
-import type { RegisterDto, LoginDto, AuthResponse, UserProfileResponse } from './auth.types.js';
+import type { RegisterDto, LoginDto, AuthResponse, UserProfileResponse, CustomerAuthResponse } from './auth.types.js';
 
 function mapRole(role: string): UserRole {
   if (Object.values(UserRole).includes(role as UserRole)) {
@@ -149,6 +150,47 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
       lastName: user.lastName,
       role: mapRole(user.role),
       agencyId: user.agencyId,
+    },
+  };
+}
+
+export async function customerVerifyOtp(
+  phone: string,
+  otp: string
+): Promise<CustomerAuthResponse> {
+  const redis = getRedis();
+  const storedOtp = await redis.get(`otp:${phone}`);
+
+  if (!storedOtp || storedOtp !== otp) {
+    throw new Error('Invalid or expired OTP');
+  }
+
+  await redis.del(`otp:${phone}`);
+
+  const customer = await prisma.customer.findFirst({
+    where: { phone, deletedAt: null },
+  });
+
+  if (!customer) {
+    throw new NotFoundError('Customer');
+  }
+
+  const token = generateToken({
+    userId: customer.id,
+    agencyId: customer.agencyId,
+    role: UserRole.CUSTOMER,
+  });
+
+  return {
+    token,
+    user: {
+      id: customer.id,
+      customerCode: customer.customerCode,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+      email: customer.email,
+      agencyId: customer.agencyId,
     },
   };
 }

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const url = 'postgresql://postgres:postgres@localhost:5432/newsflow?schema=public&sslmode=disable';
+const url = 'postgresql://postgres:postgres@localhost:5433/newsflow?schema=public&sslmode=disable';
 const p = new PrismaClient({ datasources: { db: { url } } });
 
 try {

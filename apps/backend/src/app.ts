@@ -15,13 +15,14 @@ import productRoutes from './modules/product/product.routes.js';
 import subscriptionRoutes from './modules/subscription/subscription.routes.js';
 import complaintRoutes from './modules/complaint/complaint.routes.js';
 import billingRoutes from './modules/billing/billing.routes.js';
+import customerPortalRoutes from './modules/customer-portal/customer-portal.routes.js';
 
 const app: Express = express();
 
 app.use(helmet());
 app.use(
   cors({
-    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL],
+    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL, 'http://localhost:3002'],
     credentials: true,
   })
 );
@@ -50,6 +51,7 @@ app.use(`${config.API_PREFIX}/products`, productRoutes);
 app.use(`${config.API_PREFIX}/subscriptions`, subscriptionRoutes);
 app.use(`${config.API_PREFIX}/complaints`, complaintRoutes);
 app.use(`${config.API_PREFIX}/billing`, billingRoutes);
+app.use(`${config.API_PREFIX}/customer-portal`, customerPortalRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

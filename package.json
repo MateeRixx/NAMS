@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm --filter=backend dev",
     "dev:admin": "pnpm --filter=admin dev",
+    "dev:customer": "pnpm --filter=customer dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
