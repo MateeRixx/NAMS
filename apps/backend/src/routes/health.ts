@@ -12,7 +12,7 @@ router.get('/health', async (_req, res) => {
   };
 
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw`SELECT 1`; // eslint-disable-line @typescript-eslint/no-unsafe-call
     checks.database = true;
   } catch (err) {
     console.error('Database health check failed:', err);

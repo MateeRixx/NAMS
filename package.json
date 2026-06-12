@@ -13,9 +13,9 @@
     "db:push": "pnpm --filter=database db:push",
     "db:migrate": "pnpm --filter=database db:migrate",
     "db:studio": "pnpm --filter=database db:studio",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
+    "docker:up": "docker compose up -d postgres redis",
+    "docker:down": "docker compose down postgres redis",
+    "docker:logs": "docker compose logs -f",
     "clean": "pnpm -r exec rm -rf dist node_modules && rm -rf node_modules"
   },
   "devDependencies": {

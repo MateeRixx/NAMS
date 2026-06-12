@@ -1,4 +1,8 @@
+import dotenv from 'dotenv';
+import { resolve } from 'path';
 import { z } from 'zod';
+
+dotenv.config({ path: resolve('.env') });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -13,6 +17,8 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().optional(),
   FIREBASE_PROJECT_ID: z.string().optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().optional(),
+  FIREBASE_PRIVATE_KEY: z.string().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('debug'),
   ADMIN_DASHBOARD_URL: z.string().default('http://localhost:3001'),
   MOBILE_APP_URL: z.string().default('http://localhost:3002'),

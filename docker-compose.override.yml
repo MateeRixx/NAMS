@@ -14,9 +14,12 @@ services:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/newsflow?schema=public
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-that-is-at-least-32-characters-long
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./apps/backend/src:/app/apps/backend/src
+      - ./packages/shared/src:/app/packages/shared/src
+      - ./packages/database/src:/app/packages/database/src
+      - ./packages/database/prisma:/app/packages/database/prisma
     depends_on:
       postgres:
         condition: service_healthy

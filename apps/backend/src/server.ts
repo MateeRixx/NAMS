@@ -4,7 +4,7 @@ import { config } from './config/index.js';
 
 async function main() {
   try {
-    await prisma.$connect();
+    await prisma.$connect(); // eslint-disable-line @typescript-eslint/no-unsafe-call
     console.log('Database connected successfully');
 
     app.listen(config.PORT, () => {
@@ -19,6 +19,7 @@ async function main() {
 
 function handleShutdown() {
   console.log('\nShutting down...');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   prisma
     .$disconnect()
     .then(() => process.exit(0))

@@ -7,6 +7,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
 import healthRoutes from './routes/health.js';
+import authRoutes from './modules/auth/auth.routes.js';
 
 const app: Express = express();
 
@@ -34,6 +35,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use(config.API_PREFIX, healthRoutes);
+app.use(`${config.API_PREFIX}/auth`, authRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

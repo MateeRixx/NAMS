@@ -1,4 +1,5 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -7,19 +8,27 @@ COPY packages/database/package.json ./packages/database/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/config/package.json ./packages/config/
 RUN pnpm install --frozen-lockfile
-COPY . .
 
 FROM base AS development
-CMD ["pnpm", "dev"]
+COPY . .
+RUN pnpm db:generate
+CMD ["sh", "-c", "pnpm --filter=database db:push && pnpm --filter=database db:seed && pnpm dev"]
 
 FROM base AS builder
-RUN pnpm build
+COPY . .
+RUN pnpm db:generate && pnpm build
 
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/packages/database/dist ./packages/database/dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/package.json
+COPY --from=builder /app/packages/database/package.json ./packages/database/package.json
 EXPOSE 3000
-CMD ["node", "dist/apps/backend/server.js"]
+CMD ["node", "apps/backend/dist/server.js"]

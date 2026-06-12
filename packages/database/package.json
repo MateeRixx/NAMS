@@ -2,6 +2,7 @@
   "name": "@newsflow/database",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -18,7 +19,8 @@
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.7.0"
+    "@prisma/client": "^5.7.0",
+    "pg": "^8.21.0"
   },
   "devDependencies": {
     "@newsflow/config": "workspace:*",
