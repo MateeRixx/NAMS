@@ -1,5 +1,6 @@
 FROM node:20-slim AS base
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+RUN apt-get update -y && apt-get install -y openssl chromium --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
@@ -10,6 +11,8 @@ COPY packages/config/package.json ./packages/config/
 RUN pnpm install --frozen-lockfile
 
 FROM base AS development
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 COPY . .
 RUN pnpm db:generate
 CMD ["sh", "-c", "pnpm --filter=database db:push && pnpm --filter=database db:seed && pnpm dev"]
@@ -19,7 +22,7 @@ COPY . .
 RUN pnpm db:generate && pnpm build
 
 FROM node:20-slim AS production
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl chromium --no-install-recommends && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@8.15.0 --activate
 WORKDIR /app
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
