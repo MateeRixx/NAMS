@@ -1,0 +1,472 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  AGENCY_ADMIN
+  AGENCY_STAFF
+  CUSTOMER
+}
+
+enum ProductType {
+  NEWSPAPER
+  MAGAZINE
+  BUNDLE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
+
+enum ComplaintStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ComplaintType {
+  MISSED_DELIVERY
+  DAMAGED_PAPER
+  WRONG_PRODUCT
+  LATE_DELIVERY
+  OTHER
+}
+
+enum InvoiceStatus {
+  PENDING
+  GENERATED
+  PAID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  ONLINE
+  CASH
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  PUSH
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum DistributionRequestStatus {
+  PENDING
+  QUOTED
+  APPROVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ArticleRequestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+}
+
+model Agency {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String
+  address   String?
+  gstNumber String?
+  logoUrl   String?
+  status    String   @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users               User[]
+  customers           Customer[]
+  addresses           Address[]
+  products            Product[]
+  dayRates            ProductDayRate[]
+  deliveryZones       DeliveryZone[]
+  subscriptions       Subscription[]
+  subscriptionPauses  SubscriptionPause[]
+  complaints          Complaint[]
+  complaintHistories  ComplaintHistory[]
+  invoices            Invoice[]
+  payments            Payment[]
+  notifications       Notification[]
+  distributionRequests DistributionRequest[]
+  articleRequests     ArticleRequest[]
+  auditLogs           AuditLog[]
+}
+
+model User {
+  id         String   @id @default(uuid())
+  agencyId   String
+  email      String?
+  phone      String?
+  firebaseUid String  @unique
+  firstName  String
+  lastName   String
+  role       UserRole @default(AGENCY_STAFF)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+
+  @@index([agencyId])
+  @@index([email])
+  @@index([phone])
+}
+
+model Customer {
+  id           String   @id @default(uuid())
+  agencyId     String
+  customerCode String
+  firstName    String
+  lastName     String
+  phone        String
+  email        String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+  deletedBy    String?
+
+  agency        Agency             @relation(fields: [agencyId], references: [id])
+  addresses     Address[]
+  subscriptions Subscription[]
+  complaints    Complaint[]
+  invoices      Invoice[]
+  payments      Payment[]
+  notifications Notification[]
+  distributionRequests DistributionRequest[]
+  articleRequests     ArticleRequest[]
+
+  @@index([agencyId])
+  @@index([phone])
+  @@index([customerCode])
+}
+
+model Address {
+  id          String   @id @default(uuid())
+  agencyId    String
+  customerId  String
+  zoneId      String?
+  houseNumber String
+  street      String
+  landmark    String?
+  area        String
+  city        String
+  state       String
+  postalCode  String
+  isPrimary   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  deliveryZone  DeliveryZone? @relation(fields: [zoneId], references: [id])
+  agency        Agency        @relation(fields: [agencyId], references: [id])
+
+  @@index([customerId])
+  @@index([zoneId])
+  @@index([postalCode])
+}
+
+model DeliveryZone {
+  id            String   @id @default(uuid())
+  agencyId      String
+  name          String
+  description   String?
+  monthlyCharge Decimal  @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  agency    Agency    @relation(fields: [agencyId], references: [id])
+  addresses Address[]
+
+  @@index([agencyId])
+  @@index([name])
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  agencyId    String
+  name        String
+  description String?
+  type        ProductType @default(NEWSPAPER)
+  basePrice   Decimal
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  agency           Agency            @relation(fields: [agencyId], references: [id])
+  dayRates         ProductDayRate[]
+  subscriptions    Subscription[]
+
+  @@index([agencyId])
+  @@index([name])
+  @@index([type])
+}
+
+model ProductDayRate {
+  id        String   @id @default(uuid())
+  agencyId  String
+  productId String
+  dayOfWeek Int
+  price     Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  agency  Agency  @relation(fields: [agencyId], references: [id])
+
+  @@unique([productId, dayOfWeek])
+  @@index([productId])
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  agencyId  String
+  customerId String
+  productId String
+  startDate DateTime
+  endDate   DateTime?
+  status    SubscriptionStatus @default(ACTIVE)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  agency   Agency              @relation(fields: [agencyId], references: [id])
+  customer Customer            @relation(fields: [customerId], references: [id])
+  product  Product             @relation(fields: [productId], references: [id])
+  pauses   SubscriptionPause[]
+  complaints Complaint[]
+
+  @@index([agencyId])
+  @@index([customerId])
+  @@index([productId])
+  @@index([status])
+}
+
+model SubscriptionPause {
+  id              String   @id @default(uuid())
+  agencyId        String
+  subscriptionId String
+  startDate       DateTime
+  endDate         DateTime
+  reason          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  agency       Agency      @relation(fields: [agencyId], references: [id])
+
+  @@index([subscriptionId])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model Complaint {
+  id              String         @id @default(uuid())
+  agencyId        String
+  customerId      String
+  subscriptionId  String?
+  type            ComplaintType
+  description     String?
+  status          ComplaintStatus @default(PENDING)
+  resolvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  agency       Agency            @relation(fields: [agencyId], references: [id])
+  customer     Customer          @relation(fields: [customerId], references: [id])
+  subscription Subscription?     @relation(fields: [subscriptionId], references: [id])
+  history      ComplaintHistory[]
+
+  @@index([agencyId])
+  @@index([customerId])
+  @@index([status])
+  @@index([type])
+}
+
+model ComplaintHistory {
+  id          String   @id @default(uuid())
+  agencyId    String
+  complaintId String
+  action      String
+  notes       String?
+  performedBy String
+  createdAt   DateTime @default(now())
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  agency    Agency    @relation(fields: [agencyId], references: [id])
+
+  @@index([complaintId])
+  @@index([createdAt])
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  agencyId        String
+  customerId      String
+  invoiceNumber   String        @unique
+  billingMonth    Int
+  billingYear     Int
+  subtotal        Decimal
+  deliveryCharges Decimal       @default(0)
+  discountAmount  Decimal       @default(0)
+  taxAmount       Decimal       @default(0)
+  totalAmount     Decimal
+  status          InvoiceStatus @default(PENDING)
+  generatedAt     DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+
+  agency   Agency       @relation(fields: [agencyId], references: [id])
+  customer Customer     @relation(fields: [customerId], references: [id])
+  items    InvoiceItem[]
+  payments Payment[]
+
+  @@index([agencyId])
+  @@index([customerId])
+  @@index([billingMonth, billingYear])
+  @@index([invoiceNumber])
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  productId   String?
+  description String
+  quantity    Int
+  unitPrice   Decimal
+  amount      Decimal
+  createdAt   DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model Payment {
+  id                  String        @id @default(uuid())
+  agencyId            String
+  invoiceId           String
+  customerId          String
+  amount              Decimal
+  method              PaymentMethod
+  status              PaymentStatus @default(PENDING)
+  transactionReference String?
+  paidAt              DateTime?
+  createdAt           DateTime      @default(now())
+
+  agency   Agency  @relation(fields: [agencyId], references: [id])
+  invoice  Invoice @relation(fields: [invoiceId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([agencyId])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([paidAt])
+}
+
+model DistributionRequest {
+  id                String                    @id @default(uuid())
+  agencyId          String
+  customerId        String
+  title             String
+  description       String?
+  requestedQuantity Int
+  quotedPrice       Decimal?
+  status            DistributionRequestStatus @default(PENDING)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  agency   Agency   @relation(fields: [agencyId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([agencyId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model ArticleRequest {
+  id          String                @id @default(uuid())
+  agencyId    String
+  customerId  String
+  title       String
+  content     String
+  status      ArticleRequestStatus  @default(SUBMITTED)
+  reviewNotes String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  agency   Agency   @relation(fields: [agencyId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([agencyId])
+  @@index([customerId])
+  @@index([status])
+}
+
+model Notification {
+  id         String             @id @default(uuid())
+  agencyId   String
+  customerId String?
+  type       String
+  channel    NotificationChannel
+  title      String
+  message    String
+  status     NotificationStatus @default(PENDING)
+  sentAt     DateTime?
+  createdAt  DateTime           @default(now())
+
+  agency   Agency    @relation(fields: [agencyId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@index([agencyId])
+  @@index([customerId])
+  @@index([status])
+  @@index([channel])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  agencyId   String
+  userId     String?
+  entityType String
+  entityId   String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+
+  @@index([agencyId])
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+}

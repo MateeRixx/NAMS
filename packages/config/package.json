@@ -1,0 +1,16 @@
+{
+  "name": "@newsflow/config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "exports": {
+    "./tsconfig.json": "./tsconfig.json",
+    "./eslintrc.js": "./eslintrc.js"
+  },
+  "scripts": {
+    "lint": "echo 'config lint ok'",
+    "typecheck": "echo 'config typecheck ok'",
+    "test": "echo 'config tests ok'"
+  }
+}
