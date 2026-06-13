@@ -18,7 +18,7 @@ async function main() {
     },
   });
 
-  const user = await prisma.user.create({
+  const adminUser = await prisma.user.create({
     data: {
       agencyId: agency.id,
       email: 'admin@newsflow.local',
@@ -30,7 +30,19 @@ async function main() {
     },
   });
 
-  console.log(`Seed created: Agency ${agency.id}, User ${user.id}`);
+  const staffUser = await prisma.user.create({
+    data: {
+      agencyId: agency.id,
+      email: 'staff@newsflow.local',
+      firebaseUid: 'dev-staff-uid',
+      firstName: 'Dev',
+      lastName: 'Staff',
+      role: 'AGENCY_STAFF',
+      isActive: true,
+    },
+  });
+
+  console.log(`Seed created: Agency ${agency.id}, Admin ${adminUser.id}, Staff ${staffUser.id}`);
 }
 
 main()
