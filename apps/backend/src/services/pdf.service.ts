@@ -41,6 +41,7 @@ interface InvoiceData {
   deliveryCharges: number;
   discountAmount: number;
   taxAmount: number;
+  previousBalance: number;
   totalAmount: number;
 }
 
@@ -51,9 +52,14 @@ function renderTemplate(data: InvoiceData): string {
 
   const itemRows = data.items
     .map(
-      (item) =>
+      (item, idx) =>
         `<tr>
-          <td>${item.description}</td>
+          <td class="item-number">${String(idx + 1).padStart(2, '0')}</td>
+          <td>
+            <div>
+              <h5 class="text-truncate font-size-14 mb-1">${item.description}</h5>
+            </div>
+          </td>
           <td style="text-align:center">${item.quantity}</td>
           <td style="text-align:right">${formatCurrency(item.unitPrice)}</td>
           <td style="text-align:right">${formatCurrency(item.amount)}</td>
@@ -63,7 +69,12 @@ function renderTemplate(data: InvoiceData): string {
 
   const discountRow =
     data.discountAmount > 0
-      ? `<tr><td>SLA Penalty Discount</td><td style="color:#e53e3e">-${formatCurrency(data.discountAmount)}</td></tr>`
+      ? `<tr><td colspan="4" class="text-end border-0 discount-text">SLA Penalty Discount</td><td class="border-0 discount-text">-${formatCurrency(data.discountAmount)}</td></tr>`
+      : '';
+
+  const previousBalanceRow =
+    data.previousBalance > 0
+      ? `<tr><td colspan="4" class="text-end border-0 previous-balance-text">Previous Balance (unpaid)</td><td class="border-0 previous-balance-text">${formatCurrency(data.previousBalance)}</td></tr>`
       : '';
 
   const replacements: Record<string, string> = {
@@ -85,6 +96,7 @@ function renderTemplate(data: InvoiceData): string {
     '{{items}}': itemRows,
     '{{subtotal}}': formatCurrency(data.subtotal),
     '{{deliveryCharges}}': formatCurrency(data.deliveryCharges),
+    '{{previousBalanceRow}}': previousBalanceRow,
     '{{discountRow}}': discountRow,
     '{{sgst}}': formatCurrency(taxHalf),
     '{{cgst}}': formatCurrency(taxHalf),

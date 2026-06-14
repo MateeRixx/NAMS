@@ -67,6 +67,27 @@ export async function findUnresolvedComplaintsInPeriod(
   });
 }
 
+export async function sumUnpaidPreviousInvoices(
+  customerId: string,
+  agencyId: string,
+  beforeMonth: number,
+  beforeYear: number
+): Promise<number> {
+  const result = await prisma.invoice.aggregate({
+    where: {
+      customerId,
+      agencyId,
+      status: { not: 'PAID' },
+      OR: [
+        { billingYear: { lt: beforeYear } },
+        { billingYear: beforeYear, billingMonth: { lt: beforeMonth } },
+      ],
+    },
+    _sum: { totalAmount: true },
+  });
+  return Number(result._sum.totalAmount?.toString() ?? 0);
+}
+
 export async function getNextInvoiceSequence(
   agencyId: string,
   billingMonth: number,
@@ -88,6 +109,7 @@ export async function createInvoiceWithItems(data: {
   deliveryCharges: number;
   discountAmount: number;
   taxAmount: number;
+  previousBalance: number;
   totalAmount: number;
   status: string;
   generatedAt: Date;
@@ -111,6 +133,7 @@ export async function createInvoiceWithItems(data: {
         deliveryCharges: data.deliveryCharges,
         discountAmount: data.discountAmount,
         taxAmount: data.taxAmount,
+        previousBalance: data.previousBalance,
         totalAmount: data.totalAmount,
         status: data.status as never,
         generatedAt: data.generatedAt,

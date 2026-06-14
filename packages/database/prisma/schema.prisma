@@ -358,6 +358,7 @@ model Invoice {
   deliveryCharges Decimal       @default(0)
   discountAmount  Decimal       @default(0)
   taxAmount       Decimal       @default(0)
+  previousBalance Decimal       @default(0)
   totalAmount     Decimal
   status          InvoiceStatus @default(PENDING)
   generatedAt     DateTime      @default(now())

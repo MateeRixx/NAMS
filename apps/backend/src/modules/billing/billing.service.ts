@@ -19,6 +19,7 @@ function toInvoiceResponse(inv: {
   deliveryCharges: { toString: () => string };
   discountAmount: { toString: () => string };
   taxAmount: { toString: () => string };
+  previousBalance: { toString: () => string };
   totalAmount: { toString: () => string };
   status: string;
   generatedAt: Date;
@@ -45,6 +46,7 @@ function toInvoiceResponse(inv: {
     deliveryCharges: Number(inv.deliveryCharges.toString()),
     discountAmount: Number(inv.discountAmount.toString()),
     taxAmount: Number(inv.taxAmount.toString()),
+    previousBalance: Number(inv.previousBalance.toString()),
     totalAmount: Number(inv.totalAmount.toString()),
     status: inv.status,
     generatedAt: inv.generatedAt,
@@ -215,7 +217,25 @@ export async function generateInvoice(
 
   const taxableAmount = subtotal + deliveryCharges - discountAmount;
   const taxAmount = Math.round(taxableAmount * TAX_RATE * 100) / 100;
-  const totalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
+
+  const previousBalance = await billingRepository.sumUnpaidPreviousInvoices(
+    dto.customerId,
+    agencyId,
+    dto.billingMonth,
+    dto.billingYear
+  );
+
+  if (previousBalance > 0) {
+    invoiceItems.push({
+      productId: null,
+      description: `Previous balance (unpaid invoices)`,
+      quantity: 1,
+      unitPrice: previousBalance,
+      amount: previousBalance,
+    });
+  }
+
+  const totalAmount = Math.round((taxableAmount + taxAmount + previousBalance) * 100) / 100;
 
   const seq = await billingRepository.getNextInvoiceSequence(
     agencyId,
@@ -234,6 +254,7 @@ export async function generateInvoice(
     deliveryCharges,
     discountAmount,
     taxAmount,
+    previousBalance,
     totalAmount,
     status: 'GENERATED',
     generatedAt: new Date(),
@@ -327,6 +348,7 @@ export async function getInvoicePdf(id: string, agencyId: string): Promise<Buffe
       deliveryCharges: Number(invoice.deliveryCharges.toString()),
       discountAmount: Number(invoice.discountAmount.toString()),
       taxAmount: Number(invoice.taxAmount.toString()),
+      previousBalance: Number(invoice.previousBalance?.toString() ?? '0'),
       totalAmount: Number(invoice.totalAmount.toString()),
     },
     invoice.id
