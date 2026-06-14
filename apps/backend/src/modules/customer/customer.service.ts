@@ -144,10 +144,12 @@ export async function listCustomers(
   };
 }
 
-export async function getDeliverySheet(
-  agencyId: string
-): Promise<{
-  zones: { id: string; name: string; customers: { name: string; phone: string; address: string; area: string; postalCode: string }[] }[];
+export async function getDeliverySheet(agencyId: string): Promise<{
+  zones: {
+    id: string;
+    name: string;
+    customers: { name: string; phone: string; address: string; area: string; postalCode: string }[];
+  }[];
   unzoned: { name: string; phone: string; address: string; area: string; postalCode: string }[];
   generatedAt: string;
 }> {
@@ -162,8 +164,27 @@ export async function getDeliverySheet(
     orderBy: { firstName: 'asc' },
   });
 
-  const zoneMap = new Map<string, { id: string; name: string; customers: { name: string; phone: string; address: string; area: string; postalCode: string }[] }>();
-  const unzoned: { name: string; phone: string; address: string; area: string; postalCode: string }[] = [];
+  const zoneMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      customers: {
+        name: string;
+        phone: string;
+        address: string;
+        area: string;
+        postalCode: string;
+      }[];
+    }
+  >();
+  const unzoned: {
+    name: string;
+    phone: string;
+    address: string;
+    area: string;
+    postalCode: string;
+  }[] = [];
 
   for (const c of customers) {
     const entry = {
@@ -176,7 +197,9 @@ export async function getDeliverySheet(
 
     const primaryAddr = c.addresses[0];
     if (primaryAddr) {
-      entry.address = [primaryAddr.houseNumber, primaryAddr.street, primaryAddr.landmark].filter(Boolean).join(', ');
+      entry.address = [primaryAddr.houseNumber, primaryAddr.street, primaryAddr.landmark]
+        .filter(Boolean)
+        .join(', ');
       entry.area = primaryAddr.area;
       entry.postalCode = primaryAddr.postalCode;
 

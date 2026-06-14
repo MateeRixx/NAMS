@@ -67,6 +67,15 @@ export async function getProfile(req: Request, res: Response, next: NextFunction
   }
 }
 
+export async function listUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const users = await authService.listUsersByAgency(req.user!.agencyId);
+    res.json({ success: true, data: users });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const profile = await authService.getProfile(req.user!.userId);

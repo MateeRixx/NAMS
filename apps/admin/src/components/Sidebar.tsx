@@ -9,6 +9,8 @@ const links = [
   { to: '/delivery-zones', label: 'Delivery Zones', icon: '📍' },
   { to: '/delivery-sheet', label: 'Delivery Sheet', icon: '📋' },
   { to: '/billing', label: 'Billing', icon: '💰' },
+  { to: '/billing-charges', label: 'Charges', icon: '💳' },
+  { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export default function Sidebar() {

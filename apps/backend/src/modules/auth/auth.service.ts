@@ -1,10 +1,16 @@
 import jwt from 'jsonwebtoken';
-import { ConflictError, NotFoundError, UserRole, type JwtPayload } from '@newsflow/shared';
+import { AuthenticationError, ConflictError, NotFoundError, UserRole, type JwtPayload } from '@newsflow/shared';
 import prisma from '@newsflow/database';
 import { config } from '../../config/index.js';
 import { getRedis } from '../../config/redis.js';
 import * as authRepository from './auth.repository.js';
-import type { RegisterDto, LoginDto, AuthResponse, UserProfileResponse, CustomerAuthResponse } from './auth.types.js';
+import type {
+  RegisterDto,
+  LoginDto,
+  AuthResponse,
+  UserProfileResponse,
+  CustomerAuthResponse,
+} from './auth.types.js';
 
 function mapRole(role: string): UserRole {
   if (Object.values(UserRole).includes(role as UserRole)) {
@@ -82,7 +88,7 @@ export async function login(dto: LoginDto): Promise<AuthResponse> {
   }
 
   if (!user.isActive) {
-    throw new Error('Account is disabled');
+    throw new AuthenticationError('Account is disabled');
   }
 
   const token = generateToken({
@@ -120,7 +126,7 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
   const storedOtp = await redis.get(`otp:${phone}`);
 
   if (!storedOtp || storedOtp !== otp) {
-    throw new Error('Invalid or expired OTP');
+    throw new AuthenticationError('Invalid or expired OTP');
   }
 
   await redis.del(`otp:${phone}`);
@@ -131,7 +137,7 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
   }
 
   if (!user.isActive) {
-    throw new Error('Account is disabled');
+    throw new AuthenticationError('Account is disabled');
   }
 
   const token = generateToken({
@@ -154,15 +160,12 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
   };
 }
 
-export async function customerVerifyOtp(
-  phone: string,
-  otp: string
-): Promise<CustomerAuthResponse> {
+export async function customerVerifyOtp(phone: string, otp: string): Promise<CustomerAuthResponse> {
   const redis = getRedis();
   const storedOtp = await redis.get(`otp:${phone}`);
 
   if (!storedOtp || storedOtp !== otp) {
-    throw new Error('Invalid or expired OTP');
+    throw new AuthenticationError('Invalid or expired OTP');
   }
 
   await redis.del(`otp:${phone}`);
@@ -193,6 +196,20 @@ export async function customerVerifyOtp(
       agencyId: customer.agencyId,
     },
   };
+}
+
+export async function listUsersByAgency(agencyId: string) {
+  const users = await authRepository.findUsersByAgencyId(agencyId);
+  return users.map((u) => ({
+    id: u.id,
+    email: u.email,
+    phone: u.phone,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    role: mapRole(u.role),
+    isActive: u.isActive,
+    createdAt: u.createdAt,
+  }));
 }
 
 export async function getProfile(userId: string): Promise<UserProfileResponse> {

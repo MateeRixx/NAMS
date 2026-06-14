@@ -20,12 +20,15 @@ interface DayRate {
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const productTypes = ['NEWSPAPER', 'MAGAZINE', 'BUNDLE'];
 
+const emptyDayRates: Record<number, string> = { 0: '', 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' };
+
 export default function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' });
+  const [dayRateInputs, setDayRateInputs] = useState<Record<number, string>>({ ...emptyDayRates });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [dayRateProduct, setDayRateProduct] = useState<string | null>(null);
@@ -50,7 +53,16 @@ export default function Products() {
     setSaving(true);
     setFormError('');
     try {
-      const payload = { name: form.name, type: form.type, basePrice: parseFloat(form.basePrice), description: form.description || undefined };
+      const dayRatesPayload = Object.entries(dayRateInputs)
+        .filter(([, v]) => v !== '')
+        .map(([k, v]) => ({ dayOfWeek: Number(k), price: parseFloat(v) }));
+      const payload: Record<string, unknown> = {
+        name: form.name,
+        type: form.type,
+        basePrice: parseFloat(form.basePrice),
+        description: form.description || undefined,
+      };
+      if (dayRatesPayload.length) payload.dayRates = dayRatesPayload;
       if (editId) {
         await client.patch(`/products/${editId}`, payload);
       } else {
@@ -59,6 +71,7 @@ export default function Products() {
       setShowForm(false);
       setEditId(null);
       setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' });
+      setDayRateInputs({ ...emptyDayRates });
       await load();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Failed to save product');
@@ -67,9 +80,18 @@ export default function Products() {
     }
   }
 
-  function startEdit(p: Product) {
+  async function startEdit(p: Product) {
     setEditId(p.id);
     setForm({ name: p.name, type: p.type, basePrice: String(p.basePrice), description: p.description ?? '' });
+    try {
+      const res = await client.get(`/products/${p.id}/rates`);
+      const rates: DayRate[] = res.data.data;
+      const dr: Record<number, string> = { ...emptyDayRates };
+      rates.forEach((r) => { dr[r.dayOfWeek] = String(r.price); });
+      setDayRateInputs(dr);
+    } catch {
+      setDayRateInputs({ ...emptyDayRates });
+    }
     setShowForm(true);
   }
 
@@ -119,7 +141,7 @@ export default function Products() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Products</h1>
-        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' }); }}>
+        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' }); setDayRateInputs({ ...emptyDayRates }); }}>
           {showForm ? 'Cancel' : '+ Add Product'}
         </button>
       </div>
@@ -142,11 +164,34 @@ export default function Products() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
             <div className="input-group">
               <label>Base Price (₹) *</label>
-              <input className="input" type="number" step="0.01" min="0" value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: e.target.value })} />
+              <input className="input" type="number" step="0.01" min="0" value={form.basePrice}
+                onChange={(e) => {
+                  setForm({ ...form, basePrice: e.target.value });
+                }} />
             </div>
             <div className="input-group">
               <label>Description</label>
               <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" />
+            </div>
+          </div>
+          <div style={{ marginTop: '0.75rem' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Day-wise Prices (optional - overrides base price)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
+              {dayNames.map((name, idx) => (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <label style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center' }}>{name}</label>
+                  <input
+                    className="input"
+                    style={{ padding: '0.35rem', fontSize: '0.8rem', textAlign: 'center' }}
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={form.basePrice || '--'}
+                    value={dayRateInputs[idx] ?? ''}
+                    onChange={(e) => setDayRateInputs({ ...dayRateInputs, [idx]: e.target.value })}
+                  />
+                </div>
+              ))}
             </div>
           </div>
           {formError && <p className="error-text">{formError}</p>}

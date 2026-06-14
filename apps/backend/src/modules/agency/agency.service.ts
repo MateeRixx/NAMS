@@ -1,11 +1,6 @@
 import { ConflictError, NotFoundError } from '@newsflow/shared';
 import * as agencyRepository from './agency.repository.js';
-import type {
-  CreateAgencyDto,
-  UpdateAgencyDto,
-  AgencyResponse,
-  UpdateStatusDto,
-} from './agency.types.js';
+import type { UpdateAgencyDto, AgencyResponse, UpdateStatusDto } from './agency.types.js';
 
 function toResponse(agency: {
   id: string;
@@ -31,16 +26,6 @@ function toResponse(agency: {
     createdAt: agency.createdAt,
     updatedAt: agency.updatedAt,
   };
-}
-
-export async function createAgency(dto: CreateAgencyDto): Promise<AgencyResponse> {
-  const existingEmail = await agencyRepository.findAgencyByEmail(dto.email);
-  if (existingEmail) {
-    throw new ConflictError('Agency with this email already exists');
-  }
-
-  const agency = await agencyRepository.createAgency(dto);
-  return toResponse(agency);
 }
 
 export async function getAgency(id: string): Promise<AgencyResponse> {
@@ -79,9 +64,4 @@ export async function updateAgencyStatus(
 
   const updated = await agencyRepository.updateAgencyStatus(id, dto.status);
   return toResponse(updated);
-}
-
-export async function listAgencies(): Promise<AgencyResponse[]> {
-  const agencies = await agencyRepository.listAgencies();
-  return agencies.map(toResponse);
 }

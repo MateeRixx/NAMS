@@ -1,11 +1,3 @@
-export interface CreateAgencyDto {
-  name: string;
-  email: string;
-  phone: string;
-  address?: string;
-  gstNumber?: string;
-}
-
 export interface UpdateAgencyDto {
   name?: string;
   email?: string;

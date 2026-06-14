@@ -1,5 +1,6 @@
 import { NotFoundError, ConflictError } from '@newsflow/shared';
 import * as billingRepository from './billing.repository.js';
+import * as billingChargeRepository from '../billing-charge/billing-charge.repository.js';
 import { generateAndStoreInvoicePdf } from '../../services/pdf.service.js';
 import type { GenerateInvoiceDto, InvoiceResponse, InvoiceListItem } from './billing.types.js';
 
@@ -165,6 +166,26 @@ export async function generateInvoice(
         quantity: billableCount,
         unitPrice: Math.round((totalProductAmount / billableCount) * 100) / 100,
         amount: Math.round(totalProductAmount * 100) / 100,
+      });
+    }
+  }
+
+  const productSubtotal =
+    Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
+
+  const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
+  for (const charge of activeCharges) {
+    const chargeAmount =
+      charge.type === 'PERCENTAGE'
+        ? Math.round(productSubtotal * (Number(charge.amount.toString()) / 100) * 100) / 100
+        : Math.round(Number(charge.amount.toString()) * 100) / 100;
+    if (chargeAmount > 0) {
+      invoiceItems.push({
+        productId: null,
+        description: charge.name + (charge.description ? ` (${charge.description})` : ''),
+        quantity: 1,
+        unitPrice: chargeAmount,
+        amount: chargeAmount,
       });
     }
   }

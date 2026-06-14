@@ -21,6 +21,7 @@ router.post('/otp/verify', validate(verifyOtpSchema), authController.verifyOtp);
 router.post('/customer/otp/verify', validate(verifyOtpSchema), authController.customerVerifyOtp);
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 router.get('/me', authentication, authController.getProfile);
+router.get('/users', authentication, authController.listUsers);
 router.post('/refresh', authentication, authController.refreshToken);
 
 export default router;

@@ -1,27 +1,16 @@
 import { type Request, type Response, type NextFunction } from 'express';
 import * as customerPortalService from './customer-portal.service.js';
 
-export async function getDashboard(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getDashboard(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await customerPortalService.getDashboard(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await customerPortalService.getDashboard(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 }
 
-export async function listProducts(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function listProducts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await customerPortalService.listProducts(req.user!.agencyId);
     res.json({ success: true, data: result });
@@ -100,34 +89,19 @@ export async function resumeSubscription(
   }
 }
 
-export async function listInvoices(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function listInvoices(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await customerPortalService.listInvoices(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await customerPortalService.listInvoices(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 }
 
-export async function getInvoice(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await customerPortalService.getInvoice(
-      id,
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await customerPortalService.getInvoice(id, req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -160,10 +134,7 @@ export async function listComplaints(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await customerPortalService.listComplaints(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await customerPortalService.listComplaints(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -193,10 +164,7 @@ export async function listAddresses(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await customerPortalService.listAddresses(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await customerPortalService.listAddresses(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -264,27 +232,16 @@ export async function deleteAddress(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    await customerPortalService.deleteAddress(
-      id,
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    await customerPortalService.deleteAddress(id, req.user!.userId, req.user!.agencyId);
     res.status(204).send();
   } catch (error) {
     next(error);
   }
 }
 
-export async function getProfile(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await customerPortalService.getProfile(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await customerPortalService.getProfile(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

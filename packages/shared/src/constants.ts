@@ -19,7 +19,6 @@ export const DAYS_OF_WEEK = [
 ] as const;
 
 export const ROLES_HIERARCHY: Record<string, number> = {
-  SUPER_ADMIN: 100,
   AGENCY_ADMIN: 50,
   AGENCY_STAFF: 30,
   CUSTOMER: 10,

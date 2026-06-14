@@ -1,9 +1,15 @@
+export interface DayRateInput {
+  dayOfWeek: number;
+  price: number;
+}
+
 export interface CreateProductDto {
   name: string;
   description?: string;
   type: 'NEWSPAPER' | 'MAGAZINE' | 'BUNDLE';
   basePrice: number;
   isActive?: boolean;
+  dayRates?: DayRateInput[];
 }
 
 export interface UpdateProductDto {

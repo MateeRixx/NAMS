@@ -7,7 +7,14 @@ import type {
 } from './product.types.js';
 
 export async function createProduct(data: CreateProductDto & { agencyId: string }) {
-  return prisma.product.create({ data: data as never });
+  const { dayRates, ...productData } = data;
+  const prismaData: Record<string, unknown> = { ...productData };
+  if (dayRates?.length) {
+    prismaData['dayRates'] = {
+      create: dayRates.map((r) => ({ ...r, agencyId: data.agencyId })),
+    };
+  }
+  return prisma.product.create({ data: prismaData as never });
 }
 
 export async function findProductById(id: string, agencyId: string) {

@@ -32,11 +32,14 @@ export function getFirebaseApp(): App {
   return firebaseApp;
 }
 
+const PLACEHOLDER_PROJECT_ID = 'your-project-id';
+
 export function isFirebaseConfigured(): boolean {
   return !!(
     config.FIREBASE_PROJECT_ID &&
     config.FIREBASE_CLIENT_EMAIL &&
-    config.FIREBASE_PRIVATE_KEY
+    config.FIREBASE_PRIVATE_KEY &&
+    config.FIREBASE_PROJECT_ID !== PLACEHOLDER_PROJECT_ID
   );
 }
 

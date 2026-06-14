@@ -57,10 +57,7 @@ interface InvoiceWithItems {
   generatedAt: Date;
 }
 
-export async function getDashboard(
-  customerId: string,
-  agencyId: string
-): Promise<DashboardData> {
+export async function getDashboard(customerId: string, agencyId: string): Promise<DashboardData> {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
   });
@@ -87,8 +84,11 @@ export async function getDashboard(
   return {
     activeSubscriptions: subscriptions.filter((s) => s.status === 'ACTIVE').length,
     totalSubscriptions: subscriptions.length,
-    pendingComplaints: complaints.filter((c) => c.status === 'PENDING' || c.status === 'IN_PROGRESS').length,
-    unpaidInvoices: invoices.filter((inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE').length,
+    pendingComplaints: complaints.filter(
+      (c) => c.status === 'PENDING' || c.status === 'IN_PROGRESS'
+    ).length,
+    unpaidInvoices: invoices.filter((inv) => inv.status === 'PENDING' || inv.status === 'OVERDUE')
+      .length,
     subscriptions: subscriptions.map((s) => ({
       id: s.id,
       productName: s.product.name,
@@ -114,7 +114,9 @@ export async function getDashboard(
 
 export async function listProducts(
   agencyId: string
-): Promise<{ id: string; name: string; type: string; basePrice: number; description: string | null }[]> {
+): Promise<
+  { id: string; name: string; type: string; basePrice: number; description: string | null }[]
+> {
   const products = await prisma.product.findMany({
     where: { agencyId, isActive: true },
     orderBy: { name: 'asc' },
@@ -285,7 +287,11 @@ export async function getInvoice(
   invoiceId: string,
   customerId: string,
   agencyId: string
-): Promise<InvoiceWithItems & { items: { description: string; quantity: number; unitPrice: number; amount: number }[] }> {
+): Promise<
+  InvoiceWithItems & {
+    items: { description: string; quantity: number; unitPrice: number; amount: number }[];
+  }
+> {
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, customerId, agencyId },
     include: { items: true },
@@ -330,7 +336,16 @@ export async function downloadInvoicePdf(
 export async function listComplaints(
   customerId: string,
   agencyId: string
-): Promise<{ id: string; type: string; description: string | null; status: string; createdAt: Date; resolvedAt: Date | null }[]> {
+): Promise<
+  {
+    id: string;
+    type: string;
+    description: string | null;
+    status: string;
+    createdAt: Date;
+    resolvedAt: Date | null;
+  }[]
+> {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
   });
@@ -386,7 +401,14 @@ export async function createComplaint(
 export async function getProfile(
   customerId: string,
   agencyId: string
-): Promise<{ id: string; customerCode: string; firstName: string; lastName: string; phone: string; email: string | null }> {
+): Promise<{
+  id: string;
+  customerCode: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string | null;
+}> {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
   });
@@ -405,18 +427,20 @@ export async function getProfile(
 export async function listAddresses(
   customerId: string,
   agencyId: string
-): Promise<{
-  id: string;
-  houseNumber: string;
-  street: string;
-  landmark: string | null;
-  area: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  isPrimary: boolean;
-  zone: { id: string; name: string } | null;
-}[]> {
+): Promise<
+  {
+    id: string;
+    houseNumber: string;
+    street: string;
+    landmark: string | null;
+    area: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    isPrimary: boolean;
+    zone: { id: string; name: string } | null;
+  }[]
+> {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
   });

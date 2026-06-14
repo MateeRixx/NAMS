@@ -29,3 +29,10 @@ export async function findUserByEmail(email: string) {
 export async function findUserByPhone(phone: string) {
   return prisma.user.findFirst({ where: { phone } });
 }
+
+export async function findUsersByAgencyId(agencyId: string) {
+  return prisma.user.findMany({
+    where: { agencyId },
+    orderBy: { createdAt: 'desc' },
+  });
+}

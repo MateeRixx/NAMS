@@ -25,4 +25,4 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: pnpm dev
+    command: sh -c "pnpm --filter=database db:push && pnpm --filter=database db:seed && pnpm dev"
