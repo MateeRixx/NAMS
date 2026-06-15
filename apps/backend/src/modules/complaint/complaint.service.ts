@@ -1,5 +1,6 @@
 import { NotFoundError, ValidationError } from '@newsflow/shared';
 import * as complaintRepository from './complaint.repository.js';
+import { createAndQueueNotification } from '../../services/notification.service.js';
 import type {
   CreateComplaintDto,
   UpdateComplaintStatusDto,
@@ -87,6 +88,23 @@ export async function createComplaint(
     performedBy: userId,
   });
 
+  if (customer.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId: dto.customerId,
+      type: 'COMPLAINT_CREATED',
+      channel: 'EMAIL',
+      title: 'Complaint Registered',
+      message: `Your complaint (${dto.type}) has been registered successfully.`,
+      emailTo: customer.email,
+      emailSubject: `Complaint Registered - ${dto.type}`,
+      templateData: {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        complaintType: dto.type,
+      },
+    }).catch((err) => console.error('[ComplaintService] Failed to queue notification:', err));
+  }
+
   return toComplaintResponse(complaint);
 }
 
@@ -133,6 +151,27 @@ export async function updateComplaintStatus(
     notes: dto.notes,
     performedBy: userId,
   });
+
+  if (dto.status === 'RESOLVED' && complaint.customerId) {
+    const customer = await complaintRepository.findCustomerById(complaint.customerId, agencyId);
+    if (customer?.email) {
+      createAndQueueNotification({
+        agencyId,
+        customerId: complaint.customerId,
+        type: 'COMPLAINT_RESOLVED',
+        channel: 'EMAIL',
+        title: 'Complaint Resolved',
+        message: `Your complaint (${complaint.type}) has been resolved.`,
+        emailTo: customer.email,
+        emailSubject: 'Complaint Resolved - NewsFlow',
+        templateData: {
+          customerName: `${customer.firstName} ${customer.lastName}`,
+          complaintType: complaint.type,
+          portalUrl: '',
+        },
+      }).catch((err) => console.error('[ComplaintService] Failed to queue notification:', err));
+    }
+  }
 
   return toComplaintResponse(updated);
 }

@@ -1,5 +1,7 @@
 import { NotFoundError } from '@newsflow/shared';
 import prisma from '@newsflow/database';
+import { createAndQueueNotification } from '../../services/notification.service.js';
+import { generateCancellationInvoice, getInvoicePdf } from '../billing/billing.service.js';
 
 interface DashboardData {
   activeSubscriptions: number;
@@ -163,6 +165,23 @@ export async function createSubscription(
     },
   });
 
+  if (customer.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId,
+      type: 'SUBSCRIPTION_CREATED',
+      channel: 'EMAIL',
+      title: 'Subscription Started',
+      message: `Your subscription to ${product.name} has been activated.`,
+      emailTo: customer.email,
+      emailSubject: `Subscription Started - ${product.name}`,
+      templateData: {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        productName: product.name,
+      },
+    }).catch(() => {});
+  }
+
   return {
     id: subscription.id,
     productId: subscription.productId,
@@ -205,6 +224,49 @@ export async function listSubscriptions(
   }));
 }
 
+export async function cancelSubscription(
+  subscriptionId: string,
+  customerId: string,
+  agencyId: string
+): Promise<{ id: string; status: string }> {
+  const subscription = await prisma.subscription.findFirst({
+    where: { id: subscriptionId, customerId, agencyId },
+  });
+  if (!subscription) throw new NotFoundError('Subscription');
+  if (subscription.status !== 'ACTIVE') throw new Error('Subscription is not active');
+
+  const cancelDate = new Date();
+
+  const invoice = await generateCancellationInvoice(customerId, agencyId, subscriptionId, cancelDate);
+  if (invoice) {
+    console.log(`[CustomerPortal] Final invoice ${invoice.invoiceNumber} generated`);
+  }
+
+  const updated = await prisma.subscription.update({
+    where: { id: subscriptionId },
+    data: { status: 'CANCELLED', endDate: cancelDate },
+  });
+
+  const cust = await prisma.customer.findFirst({
+    where: { id: customerId, agencyId, deletedAt: null },
+  });
+  if (cust?.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId,
+      type: 'SUBSCRIPTION_CANCELLED',
+      channel: 'EMAIL',
+      title: 'Subscription Cancelled',
+      message: 'Your subscription has been cancelled.',
+      emailTo: cust.email,
+      emailSubject: 'Subscription Cancelled - NewsFlow',
+      templateData: { customerName: `${cust.firstName} ${cust.lastName}` },
+    }).catch(() => {});
+  }
+
+  return { id: updated.id, status: updated.status };
+}
+
 export async function pauseSubscription(
   subscriptionId: string,
   customerId: string,
@@ -232,6 +294,23 @@ export async function pauseSubscription(
     },
   });
 
+  const cust = await prisma.customer.findFirst({
+    where: { id: customerId, agencyId, deletedAt: null },
+  });
+  if (cust?.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId,
+      type: 'SUBSCRIPTION_PAUSED',
+      channel: 'EMAIL',
+      title: 'Subscription Paused',
+      message: 'Your subscription has been paused.',
+      emailTo: cust.email,
+      emailSubject: 'Subscription Paused - NewsFlow',
+      templateData: { customerName: `${cust.firstName} ${cust.lastName}` },
+    }).catch(() => {});
+  }
+
   return { id: updated.id, status: updated.status };
 }
 
@@ -250,6 +329,23 @@ export async function resumeSubscription(
     where: { id: subscriptionId },
     data: { status: 'ACTIVE' },
   });
+
+  const cust = await prisma.customer.findFirst({
+    where: { id: customerId, agencyId, deletedAt: null },
+  });
+  if (cust?.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId,
+      type: 'SUBSCRIPTION_RESUMED',
+      channel: 'EMAIL',
+      title: 'Subscription Resumed',
+      message: 'Your subscription has been resumed.',
+      emailTo: cust.email,
+      emailSubject: 'Subscription Resumed - NewsFlow',
+      templateData: { customerName: `${cust.firstName} ${cust.lastName}` },
+    }).catch(() => {});
+  }
 
   return { id: updated.id, status: updated.status };
 }
@@ -329,8 +425,7 @@ export async function downloadInvoicePdf(
   });
   if (!invoice) throw new NotFoundError('Invoice');
 
-  const pdfBuffer = Buffer.from('PDF placeholder - integration pending');
-  return pdfBuffer;
+  return getInvoicePdf(invoiceId, agencyId);
 }
 
 export async function listComplaints(
@@ -394,6 +489,23 @@ export async function createComplaint(
       performedBy: customerId,
     },
   });
+
+  if (customer.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId,
+      type: 'COMPLAINT_CREATED',
+      channel: 'EMAIL',
+      title: 'Complaint Registered',
+      message: `Your complaint (${data.type}) has been registered.`,
+      emailTo: customer.email,
+      emailSubject: `Complaint Registered - ${data.type}`,
+      templateData: {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        complaintType: data.type,
+      },
+    }).catch(() => {});
+  }
 
   return { id: complaint.id, type: complaint.type, status: complaint.status };
 }

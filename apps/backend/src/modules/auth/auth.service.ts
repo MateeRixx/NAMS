@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { AuthenticationError, ConflictError, NotFoundError, UserRole, type JwtPayload } from '@newsflow/shared';
+import type { CustomerRegisterDto } from './auth.types.js';
 import prisma from '@newsflow/database';
 import { config } from '../../config/index.js';
 import { getRedis } from '../../config/redis.js';
@@ -177,6 +178,67 @@ export async function customerVerifyOtp(phone: string, otp: string): Promise<Cus
   if (!customer) {
     throw new NotFoundError('Customer');
   }
+
+  const token = generateToken({
+    userId: customer.id,
+    agencyId: customer.agencyId,
+    role: UserRole.CUSTOMER,
+  });
+
+  return {
+    token,
+    user: {
+      id: customer.id,
+      customerCode: customer.customerCode,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+      email: customer.email,
+      agencyId: customer.agencyId,
+    },
+  };
+}
+
+export async function customerRegister(dto: CustomerRegisterDto): Promise<CustomerAuthResponse> {
+  const redis = getRedis();
+  const storedOtp = await redis.get(`otp:${dto.phone}`);
+  if (!storedOtp || storedOtp !== dto.otp) {
+    throw new AuthenticationError('Invalid or expired OTP');
+  }
+  await redis.del(`otp:${dto.phone}`);
+
+  const existing = await prisma.customer.findFirst({
+    where: { phone: dto.phone, deletedAt: null },
+  });
+  if (existing) {
+    throw new ConflictError('Customer with this phone already exists');
+  }
+
+  const agency = await prisma.agency.findFirst();
+  if (!agency) {
+    throw new NotFoundError('Agency');
+  }
+
+  const lastCustomer = await prisma.customer.findFirst({
+    where: { agencyId: agency.id },
+    orderBy: { customerCode: 'desc' },
+    select: { customerCode: true },
+  });
+  const customerCode = !lastCustomer
+    ? 'CUST-0001'
+    : `CUST-${String(parseInt(lastCustomer.customerCode.replace('CUST-', ''), 10) + 1).padStart(4, '0')}`;
+
+  const customer = await prisma.customer.create({
+    data: {
+      agencyId: agency.id,
+      customerCode,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      phone: dto.phone,
+      email: dto.email ?? null,
+      status: 'ACTIVE',
+    },
+  });
 
   const token = generateToken({
     userId: customer.id,

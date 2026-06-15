@@ -32,6 +32,14 @@ export const verifyOtpSchema = z.object({
   otp: z.string().length(6),
 });
 
+export const customerRegisterSchema = z.object({
+  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/),
+  otp: z.string().length(6),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  email: z.string().email().optional(),
+});
+
 export const resetPasswordSchema = z.object({
   email: z.string().email(),
 });

@@ -22,6 +22,7 @@ export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [pauseModal, setPauseModal] = useState<{ id: string; start: string; end: string; reason: string } | null>(null);
+  const [cancelId, setCancelId] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
   async function load() {
@@ -46,6 +47,17 @@ export default function Subscriptions() {
         reason: pauseModal.reason || undefined,
       });
       setPauseModal(null);
+      await load();
+    } finally {
+      setProcessing(false);
+    }
+  }
+
+  async function handleCancel(id: string) {
+    setProcessing(true);
+    try {
+      await client.patch(`/customer-portal/subscriptions/${id}/cancel`);
+      setCancelId(null);
       await load();
     } finally {
       setProcessing(false);
@@ -95,6 +107,9 @@ export default function Subscriptions() {
                   <button className="btn btn-sm" onClick={() => setPauseModal({ id: sub.id, start: '', end: '', reason: '' })}>
                     Pause Delivery
                   </button>
+                  <button className="btn btn-sm btn-danger" onClick={() => setCancelId(sub.id)} style={{ marginLeft: '0.5rem' }}>
+                    Cancel
+                  </button>
                 </div>
               )}
               {sub.status === 'PAUSED' && (
@@ -121,6 +136,21 @@ export default function Subscriptions() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {cancelId && (
+        <div className="modal-overlay" onClick={() => setCancelId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancel Subscription</h3>
+            <p>A final invoice will be generated for days used this month. This cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setCancelId(null)}>Keep Subscription</button>
+              <button className="btn btn-danger" onClick={() => handleCancel(cancelId)} disabled={processing}>
+                {processing ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

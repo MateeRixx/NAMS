@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { resolve } from 'path';
 import { z } from 'zod';
 
+dotenv.config({ path: resolve('apps/backend/.env') });
 dotenv.config({ path: resolve('.env') });
 
 const envSchema = z.object({
@@ -23,6 +24,18 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('debug'),
   ADMIN_DASHBOARD_URL: z.string().default('http://localhost:3001'),
   MOBILE_APP_URL: z.string().default('http://localhost:3002'),
+
+  EMAIL_FROM: z.string().default('onboarding@resend.dev'),
+  EMAIL_PROVIDER: z.enum(['resend', 'smtp']).default('resend'),
+  EMAIL_API_KEY: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+
+  WHATSAPP_PROVIDER: z.enum(['twilio', 'none']).default('none'),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_FROM_NUMBER: z.string().optional(),
+
+  FCM_SERVER_KEY: z.string().optional(),
 });
 
 function validateConfig() {

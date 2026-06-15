@@ -10,6 +10,7 @@ router.get('/dashboard', customerPortalController.getDashboard);
 router.get('/products', customerPortalController.listProducts);
 router.post('/subscriptions', customerPortalController.createSubscription);
 router.get('/subscriptions', customerPortalController.listSubscriptions);
+router.patch('/subscriptions/:id/cancel', customerPortalController.cancelSubscription);
 router.patch('/subscriptions/:id/pause', customerPortalController.pauseSubscription);
 router.patch('/subscriptions/:id/resume', customerPortalController.resumeSubscription);
 router.get('/invoices', customerPortalController.listInvoices);
@@ -24,5 +25,8 @@ router.delete('/addresses/:id', customerPortalController.deleteAddress);
 
 router.get('/profile', customerPortalController.getProfile);
 router.patch('/profile', customerPortalController.updateProfile);
+
+router.get('/notifications', customerPortalController.listNotifications);
+router.get('/notifications/unread-count', customerPortalController.getUnreadNotificationCount);
 
 export default router;

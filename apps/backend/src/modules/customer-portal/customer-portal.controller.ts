@@ -52,6 +52,24 @@ export async function listSubscriptions(
   }
 }
 
+export async function cancelSubscription(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const id = req.params['id']!;
+    const result = await customerPortalService.cancelSubscription(
+      id,
+      req.user!.userId,
+      req.user!.agencyId
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function pauseSubscription(
   req: Request,
   res: Response,
@@ -258,6 +276,40 @@ export async function updateProfile(
       req.user!.userId,
       req.user!.agencyId,
       req.body as { firstName?: string; lastName?: string; email?: string | null }
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listNotifications(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { listNotifications } = await import('../../services/notification.service.js');
+    const result = await listNotifications(
+      req.user!.agencyId,
+      req.user!.userId
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUnreadNotificationCount(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { getUnreadCount } = await import('../../services/notification.service.js');
+    const result = await getUnreadCount(
+      req.user!.agencyId,
+      req.user!.userId
     );
     res.json({ success: true, data: result });
   } catch (error) {

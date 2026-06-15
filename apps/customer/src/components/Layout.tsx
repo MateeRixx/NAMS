@@ -7,6 +7,7 @@ const tabs = [
   { to: '/subscriptions', label: 'My Subs' },
   { to: '/invoices', label: 'Invoices' },
   { to: '/complaints', label: 'Complaints' },
+  { to: '/notifications', label: 'Alerts' },
   { to: '/profile', label: 'Profile' },
 ];
 

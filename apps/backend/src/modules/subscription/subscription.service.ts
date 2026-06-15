@@ -1,5 +1,7 @@
 import { NotFoundError, ConflictError, ValidationError } from '@newsflow/shared';
 import * as subscriptionRepository from './subscription.repository.js';
+import { createAndQueueNotification } from '../../services/notification.service.js';
+import { generateCancellationInvoice } from '../billing/billing.service.js';
 import type {
   CreateSubscriptionDto,
   PauseSubscriptionDto,
@@ -88,6 +90,24 @@ export async function createSubscription(
     endDate,
   });
 
+  const cust = await subscriptionRepository.findCustomerById(dto.customerId, agencyId);
+  if (cust?.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId: dto.customerId,
+      type: 'SUBSCRIPTION_CREATED',
+      channel: 'EMAIL',
+      title: 'Subscription Started',
+      message: `Your subscription to ${product.name} has been activated.`,
+      emailTo: cust.email,
+      emailSubject: `Subscription Started - ${product.name}`,
+      templateData: {
+        customerName: `${cust.firstName} ${cust.lastName}`,
+        productName: product.name,
+      },
+    }).catch((err) => console.error('[SubscriptionService] Failed to queue notification:', err));
+  }
+
   return toSubscriptionResponse(sub);
 }
 
@@ -112,7 +132,34 @@ export async function cancelSubscription(
     throw new ConflictError('Only active subscriptions can be cancelled');
   }
 
-  const updated = await subscriptionRepository.updateSubscriptionStatus(id, agencyId, 'CANCELLED');
+  const cancelDate = new Date();
+
+  const invoice = await generateCancellationInvoice(sub.customerId, agencyId, id, cancelDate);
+  if (invoice) {
+    console.log(`[SubscriptionService] Final invoice ${invoice.invoiceNumber} generated`);
+  }
+
+  const updated = await subscriptionRepository.cancelSubscriptionWithEndDate(id, agencyId, cancelDate);
+
+  const cust = await subscriptionRepository.findCustomerById(sub.customerId, agencyId);
+  if (cust?.email) {
+    const product = await subscriptionRepository.findProductById(sub.productId, agencyId);
+    createAndQueueNotification({
+      agencyId,
+      customerId: sub.customerId,
+      type: 'SUBSCRIPTION_CANCELLED',
+      channel: 'EMAIL',
+      title: 'Subscription Cancelled',
+      message: `Your subscription to ${product?.name ?? 'product'} has been cancelled.`,
+      emailTo: cust.email,
+      emailSubject: 'Subscription Cancelled - NewsFlow',
+      templateData: {
+        customerName: `${cust.firstName} ${cust.lastName}`,
+        productName: product?.name ?? 'Product',
+      },
+    }).catch((err) => console.error('[SubscriptionService] Failed to queue notification:', err));
+  }
+
   return toSubscriptionResponse(updated);
 }
 
@@ -151,6 +198,24 @@ export async function pauseSubscription(
   });
 
   const updated = await subscriptionRepository.updateSubscriptionStatus(id, agencyId, 'PAUSED');
+
+  const cust = await subscriptionRepository.findCustomerById(sub.customerId, agencyId);
+  if (cust?.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId: sub.customerId,
+      type: 'SUBSCRIPTION_PAUSED',
+      channel: 'EMAIL',
+      title: 'Subscription Paused',
+      message: 'Your subscription has been paused.',
+      emailTo: cust.email,
+      emailSubject: 'Subscription Paused - NewsFlow',
+      templateData: {
+        customerName: `${cust.firstName} ${cust.lastName}`,
+      },
+    }).catch((err) => console.error('[SubscriptionService] Failed to queue notification:', err));
+  }
+
   return toSubscriptionResponse(updated);
 }
 
@@ -168,6 +233,24 @@ export async function resumeSubscription(
   }
 
   const updated = await subscriptionRepository.updateSubscriptionStatus(id, agencyId, 'ACTIVE');
+
+  const cust = await subscriptionRepository.findCustomerById(sub.customerId, agencyId);
+  if (cust?.email) {
+    createAndQueueNotification({
+      agencyId,
+      customerId: sub.customerId,
+      type: 'SUBSCRIPTION_RESUMED',
+      channel: 'EMAIL',
+      title: 'Subscription Resumed',
+      message: 'Your subscription has been resumed.',
+      emailTo: cust.email,
+      emailSubject: 'Subscription Resumed - NewsFlow',
+      templateData: {
+        customerName: `${cust.firstName} ${cust.lastName}`,
+      },
+    }).catch((err) => console.error('[SubscriptionService] Failed to queue notification:', err));
+  }
+
   return toSubscriptionResponse(updated);
 }
 

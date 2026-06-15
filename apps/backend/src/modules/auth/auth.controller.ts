@@ -40,6 +40,19 @@ export async function verifyOtp(req: Request, res: Response, next: NextFunction)
   }
 }
 
+export async function customerRegister(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await authService.customerRegister(req.body as never);
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function customerVerifyOtp(
   req: Request,
   res: Response,

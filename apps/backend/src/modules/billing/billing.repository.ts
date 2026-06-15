@@ -179,6 +179,19 @@ export async function listInvoices(agencyId: string, customerId?: string) {
   });
 }
 
+export async function findCustomersWithActiveSubscriptions(agencyId: string) {
+  const customers = await prisma.customer.findMany({
+    where: { agencyId, deletedAt: null, status: 'ACTIVE' },
+    include: {
+      subscriptions: {
+        where: { status: { in: ['ACTIVE', 'PAUSED'] } },
+        take: 1,
+      },
+    },
+  });
+  return customers.filter((c) => c.subscriptions.length > 0);
+}
+
 export async function findCustomerById(id: string, agencyId: string) {
   return prisma.customer.findFirst({
     where: { id, agencyId, deletedAt: null },

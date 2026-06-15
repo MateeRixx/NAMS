@@ -34,6 +34,13 @@ export async function updateSubscriptionStatus(id: string, _agencyId: string, st
   });
 }
 
+export async function cancelSubscriptionWithEndDate(id: string, agencyId: string, endDate: Date) {
+  return prisma.subscription.update({
+    where: { id, agencyId },
+    data: { status: 'CANCELLED' as never, endDate },
+  });
+}
+
 export async function listSubscriptions(agencyId: string, customerId?: string) {
   const where: Record<string, unknown> = { agencyId };
   if (customerId) {

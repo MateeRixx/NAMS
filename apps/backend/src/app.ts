@@ -17,6 +17,7 @@ import complaintRoutes from './modules/complaint/complaint.routes.js';
 import billingRoutes from './modules/billing/billing.routes.js';
 import billingChargeRoutes from './modules/billing-charge/billing-charge.routes.js';
 import customerPortalRoutes from './modules/customer-portal/customer-portal.routes.js';
+import notificationRoutes from './modules/notification/notification.routes.js';
 
 const app: Express = express();
 
@@ -54,6 +55,7 @@ app.use(`${config.API_PREFIX}/complaints`, complaintRoutes);
 app.use(`${config.API_PREFIX}/billing`, billingRoutes);
 app.use(`${config.API_PREFIX}/billing-charges`, billingChargeRoutes);
 app.use(`${config.API_PREFIX}/customer-portal`, customerPortalRoutes);
+app.use(`${config.API_PREFIX}/notifications`, notificationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

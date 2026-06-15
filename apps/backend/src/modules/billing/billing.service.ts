@@ -2,6 +2,8 @@ import { NotFoundError, ConflictError } from '@newsflow/shared';
 import * as billingRepository from './billing.repository.js';
 import * as billingChargeRepository from '../billing-charge/billing-charge.repository.js';
 import { generateAndStoreInvoicePdf } from '../../services/pdf.service.js';
+import { createAndQueueNotification } from '../../services/notification.service.js';
+import { config } from '../../config/index.js';
 import type { GenerateInvoiceDto, InvoiceResponse, InvoiceListItem } from './billing.types.js';
 
 const TAX_RATE = 0.18;
@@ -133,8 +135,12 @@ export async function generateInvoice(
       end: p.endDate,
     }));
 
-    const subStart = sub.startDate > periodStart ? sub.startDate : periodStart;
-    const subEnd = sub.endDate && sub.endDate < periodEnd ? sub.endDate : periodEnd;
+    const startNorm = new Date(sub.startDate);
+    startNorm.setHours(0, 0, 0, 0);
+    const subStart = startNorm > periodStart ? startNorm : periodStart;
+    const endNorm = sub.endDate ? new Date(sub.endDate) : null;
+    if (endNorm) endNorm.setHours(23, 59, 59, 999);
+    const subEnd = endNorm && endNorm < periodEnd ? endNorm : periodEnd;
 
     let billableCount = 0;
     let totalProductAmount = 0;
@@ -261,6 +267,28 @@ export async function generateInvoice(
     items: invoiceItems,
   });
 
+  if (invoice) {
+    createAndQueueNotification({
+      agencyId,
+      customerId: dto.customerId,
+      type: 'INVOICE_GENERATED',
+      channel: 'EMAIL',
+      title: 'New Invoice Generated',
+      message: `Invoice ${invoiceNumber} for ₹${totalAmount} has been generated.`,
+      emailTo: customer.email ?? undefined,
+      emailSubject: `Invoice ${invoiceNumber} Generated - NewsFlow`,
+      templateData: {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        invoiceNumber,
+        billingPeriod: `${dto.billingMonth}/${dto.billingYear}`,
+        totalAmount: String(totalAmount),
+        dueDate: new Date(Date.now() + 15 * 86400000).toLocaleDateString('en-IN'),
+        invoiceId: invoice.id,
+        portalUrl: config.MOBILE_APP_URL,
+      },
+    }).catch((err) => console.error('[BillingService] Failed to queue notification:', err));
+  }
+
   return toInvoiceResponse(invoice!);
 }
 
@@ -355,6 +383,188 @@ export async function getInvoicePdf(id: string, agencyId: string): Promise<Buffe
   );
 
   return pdfBuffer.buffer;
+}
+
+export async function generateCancellationInvoice(
+  customerId: string,
+  agencyId: string,
+  subscriptionId: string,
+  cancelDate: Date
+): Promise<InvoiceResponse | null> {
+  const customer = await billingRepository.findCustomerById(customerId, agencyId);
+  if (!customer) {
+    throw new NotFoundError('Customer');
+  }
+
+  const month = cancelDate.getMonth() + 1;
+  const year = cancelDate.getFullYear();
+
+  const existing = await billingRepository.findExistingInvoice(customerId, agencyId, month, year);
+  if (existing) {
+    return null;
+  }
+
+  const periodStart = new Date(year, month - 1, 1, 0, 0, 0, 0);
+  const periodEnd = new Date(
+    cancelDate.getFullYear(),
+    cancelDate.getMonth(),
+    cancelDate.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
+
+  const subscriptions = await billingRepository.findActiveSubscriptionsInPeriod(
+    customerId,
+    agencyId,
+    periodStart,
+    periodEnd
+  );
+
+  const sub = subscriptions.find((s) => s.id === subscriptionId);
+
+  if (!sub) {
+    return null;
+  }
+
+  const productDayRateMap = new Map<string, Map<number, number>>();
+  const invoiceItems: {
+    productId: string | null;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }[] = [];
+
+  const { productId } = sub;
+  if (!productDayRateMap.has(productId)) {
+    const rates = await billingRepository.findProductDayRates(productId);
+    const rateMap = new Map<number, number>();
+    for (const rate of rates) {
+      rateMap.set(rate.dayOfWeek, Number(rate.price.toString()));
+    }
+    productDayRateMap.set(productId, rateMap);
+  }
+  const dayRates = productDayRateMap.get(productId)!;
+  const basePrice = Number(sub.product.basePrice.toString());
+
+  const pausePeriods: { start: Date; end: Date }[] = sub.pauses.map((p) => ({
+    start: p.startDate,
+    end: p.endDate,
+  }));
+
+  const startNorm = new Date(sub.startDate);
+  startNorm.setHours(0, 0, 0, 0);
+  const subStart = startNorm > periodStart ? startNorm : periodStart;
+  const endNorm = sub.endDate ? new Date(sub.endDate) : null;
+  if (endNorm) endNorm.setHours(23, 59, 59, 999);
+  const subEnd = endNorm && endNorm < periodEnd ? endNorm : periodEnd;
+
+  let billableCount = 0;
+  let totalProductAmount = 0;
+
+  const totalDays = new Date(year, month, 0).getDate();
+  for (let day = 1; day <= totalDays; day += 1) {
+    const currentDate = new Date(year, month - 1, day);
+    if (currentDate < subStart || currentDate > subEnd) {
+      continue;
+    }
+
+    const isPaused = pausePeriods.some(
+      (pause) => currentDate >= pause.start && currentDate <= pause.end
+    );
+    if (isPaused) {
+      continue;
+    }
+
+    billableCount += 1;
+    const dayOfWeek = currentDate.getDay();
+    const dayRate = dayRates.get(dayOfWeek);
+    totalProductAmount += dayRate ?? basePrice;
+  }
+
+  if (billableCount > 0) {
+    invoiceItems.push({
+      productId: sub.productId,
+      description: `${sub.product.name} (${billableCount} days)`,
+      quantity: billableCount,
+      unitPrice: Math.round((totalProductAmount / billableCount) * 100) / 100,
+      amount: Math.round(totalProductAmount * 100) / 100,
+    });
+  }
+
+  if (invoiceItems.length === 0) {
+    return null;
+  }
+
+  const subtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
+
+  const deliveryZone = await billingRepository.findPrimaryAddressZone(customerId, agencyId);
+  const deliveryCharges = deliveryZone
+    ? Math.round(Number(deliveryZone.monthlyCharge.toString()) * 100) / 100
+    : 0;
+
+  const unresolvedComplaints = await billingRepository.findUnresolvedComplaintsInPeriod(
+    customerId,
+    agencyId,
+    periodStart,
+    periodEnd
+  );
+
+  let discountAmount = 0;
+  if (unresolvedComplaints.length >= SLA_PENALTY_THRESHOLD) {
+    discountAmount = Math.round(subtotal * SLA_DISCOUNT_RATE * 100) / 100;
+  }
+
+  const taxableAmount = subtotal + deliveryCharges - discountAmount;
+  const taxAmount = Math.round(taxableAmount * TAX_RATE * 100) / 100;
+
+  const totalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
+
+  const seq = await billingRepository.getNextInvoiceSequence(agencyId, month, year);
+  const invoiceNumber = `INV-${year}${String(month).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
+
+  const invoice = await billingRepository.createInvoiceWithItems({
+    agencyId,
+    customerId,
+    invoiceNumber,
+    billingMonth: month,
+    billingYear: year,
+    subtotal,
+    deliveryCharges,
+    discountAmount,
+    taxAmount,
+    previousBalance: 0,
+    totalAmount,
+    status: 'GENERATED',
+    generatedAt: new Date(),
+    items: invoiceItems,
+  });
+
+  if (invoice) {
+    createAndQueueNotification({
+      agencyId,
+      customerId,
+      type: 'INVOICE_GENERATED',
+      channel: 'EMAIL',
+      title: 'Final Invoice Generated',
+      message: `Final invoice ${invoiceNumber} for ₹${totalAmount} has been generated.`,
+      emailTo: customer.email ?? undefined,
+      emailSubject: `Final Invoice ${invoiceNumber} - NewsFlow`,
+      templateData: {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        invoiceNumber,
+        billingPeriod: `${month}/${year}`,
+        totalAmount: String(totalAmount),
+        dueDate: new Date(Date.now() + 15 * 86400000).toLocaleDateString('en-IN'),
+        invoiceId: invoice.id,
+        portalUrl: config.MOBILE_APP_URL,
+      },
+    }).catch((err) => console.error('[BillingService] Failed to queue notification:', err));
+  }
+
+  return toInvoiceResponse(invoice!);
 }
 
 export async function listInvoices(

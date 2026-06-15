@@ -42,6 +42,14 @@ export interface ResetPasswordDto {
   email: string;
 }
 
+export interface CustomerRegisterDto {
+  phone: string;
+  otp: string;
+  firstName: string;
+  lastName: string;
+  email?: string;
+}
+
 export interface CustomerAuthResponse {
   token: string;
   user: {

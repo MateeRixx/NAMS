@@ -10,6 +10,7 @@ const links = [
   { to: '/delivery-sheet', label: 'Delivery Sheet', icon: '📋' },
   { to: '/billing', label: 'Billing', icon: '💰' },
   { to: '/billing-charges', label: 'Charges', icon: '💳' },
+  { to: '/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 

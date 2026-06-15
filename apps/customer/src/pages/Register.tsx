@@ -2,17 +2,22 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export default function Login() {
-  const { login, sendOtp } = useAuth();
+export default function Register() {
+  const { register, sendOtp } = useAuth();
   const navigate = useNavigate();
   const [phone, setPhone] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'form' | 'otp'>('form');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
   async function handleSendOtp() {
     if (phone.length < 10) { setError('Enter a valid phone number'); return; }
+    if (!firstName.trim()) { setError('Enter your first name'); return; }
+    if (!lastName.trim()) { setError('Enter your last name'); return; }
     setSending(true);
     setError('');
     try {
@@ -26,16 +31,16 @@ export default function Login() {
     }
   }
 
-  async function handleLogin() {
+  async function handleRegister() {
     if (otp.length !== 6) { setError('Enter a valid 6-digit OTP'); return; }
     setSending(true);
     setError('');
     try {
       const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      await login(formattedPhone, otp);
+      await register(formattedPhone, otp, firstName.trim(), lastName.trim(), email.trim() || undefined);
       navigate('/', { replace: true });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Invalid OTP');
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setSending(false);
     }
@@ -45,25 +50,41 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <h1>NewsFlow</h1>
-        <p className="subtitle">Customer Portal</p>
+        <p className="subtitle">Create Account</p>
 
-        {step === 'phone' ? (
+        {step === 'form' ? (
           <>
             <input
               type="tel"
-              placeholder="Enter your phone number"
+              placeholder="Phone number"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               maxLength={15}
             />
-            <p className="hint">You'll receive a 6-digit OTP</p>
+            <input
+              type="text"
+              placeholder="First name"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              maxLength={100}
+            />
+            <input
+              type="text"
+              placeholder="Last name"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              maxLength={100}
+            />
+            <input
+              type="email"
+              placeholder="Email (optional)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
             {error && <p className="error">{error}</p>}
             <button className="btn btn-primary btn-block" onClick={handleSendOtp} disabled={sending}>
               {sending ? 'Sending...' : 'Send OTP'}
             </button>
-            <p style={{ marginTop: '0.75rem', textAlign: 'center', fontSize: '0.85rem' }}>
-              New customer? <Link to="/register">Register here</Link>
-            </p>
           </>
         ) : (
           <>
@@ -76,14 +97,18 @@ export default function Login() {
               maxLength={6}
             />
             {error && <p className="error">{error}</p>}
-            <button className="btn btn-primary btn-block" onClick={handleLogin} disabled={sending}>
-              {sending ? 'Verifying...' : 'Login'}
+            <button className="btn btn-primary btn-block" onClick={handleRegister} disabled={sending}>
+              {sending ? 'Creating account...' : 'Create Account'}
             </button>
-            <button className="btn btn-block" onClick={() => { setStep('phone'); setOtp(''); setError(''); }} style={{ marginTop: '0.5rem' }}>
-              Change Phone
+            <button className="btn btn-block" onClick={() => { setStep('form'); setOtp(''); setError(''); }} style={{ marginTop: '0.5rem' }}>
+              Change Details
             </button>
           </>
         )}
+
+        <p style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.85rem' }}>
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
       </div>
     </div>
   );
