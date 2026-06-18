@@ -12,7 +12,12 @@ type NotificationType =
   | 'SUBSCRIPTION_CANCELLED'
   | 'SUBSCRIPTION_PAUSED'
   | 'SUBSCRIPTION_RESUMED'
-  | 'WELCOME';
+  | 'WELCOME'
+  | 'DISTRIBUTION_REQUEST_CREATED'
+  | 'DISTRIBUTION_REQUEST_QUOTED'
+  | 'ARTICLE_REQUEST_SUBMITTED'
+  | 'ARTICLE_APPROVED'
+  | 'ARTICLE_REJECTED';
 
 type NotificationChannel = 'EMAIL' | 'WHATSAPP' | 'PUSH';
 
@@ -39,6 +44,11 @@ const NOTIFICATION_TITLES: Record<NotificationType, string> = {
   SUBSCRIPTION_PAUSED: 'Subscription Paused',
   SUBSCRIPTION_RESUMED: 'Subscription Resumed',
   WELCOME: 'Welcome to NewsFlow',
+  DISTRIBUTION_REQUEST_CREATED: 'Distribution Request Received',
+  DISTRIBUTION_REQUEST_QUOTED: 'Distribution Quotation Ready',
+  ARTICLE_REQUEST_SUBMITTED: 'Article Submitted',
+  ARTICLE_APPROVED: 'Article Approved',
+  ARTICLE_REJECTED: 'Article Rejected',
 };
 
 export async function createAndQueueNotification(payload: NotificationPayload): Promise<void> {
@@ -60,7 +70,15 @@ export async function createAndQueueNotification(payload: NotificationPayload): 
       `notify:${payload.channel}:${payload.type}`,
       {
         notificationId: notification.id,
-        ...payload,
+        agencyId: payload.agencyId,
+        customerId: payload.customerId,
+        channel: payload.channel,
+        emailTo: payload.emailTo,
+        emailSubject: payload.emailSubject,
+        type: payload.type,
+        title: payload.title,
+        message: payload.message,
+        templateData: payload.templateData,
       },
       {
         attempts: 3,

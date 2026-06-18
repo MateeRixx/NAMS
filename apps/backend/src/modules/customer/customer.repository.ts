@@ -25,6 +25,12 @@ export async function findCustomerByPhone(phone: string, agencyId: string) {
   });
 }
 
+export async function findCustomerByEmail(email: string, agencyId: string) {
+  return prisma.customer.findFirst({
+    where: { email, agencyId, deletedAt: null },
+  });
+}
+
 export async function findCustomerByCode(customerCode: string, agencyId: string) {
   return prisma.customer.findFirst({
     where: { customerCode, agencyId, deletedAt: null },

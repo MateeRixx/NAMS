@@ -1,48 +1,43 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 
-interface Counts {
-  customers: { total: number };
-  products: { length: number };
-  subscriptions: { total: number };
-  complaints: { total: number };
-  invoices: { total: number };
-  zones: { length: number };
+interface DashboardStats {
+  customers: number;
+  activeCustomers: number;
+  products: number;
+  subscriptions: number;
+  activeSubscriptions: number;
+  pausedSubscriptions: number;
+  complaints: number;
+  pendingComplaints: number;
+  invoices: number;
+  paidInvoices: number;
+  overdueInvoices: number;
+  totalRevenue: number;
+  outstandingAmount: number;
+  deliveryZones: number;
+  newCustomersThisMonth: number;
 }
 
 export default function Dashboard() {
-  const [data, setData] = useState<Counts | null>(null);
+  const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      client.get('/customers'),
-      client.get('/products'),
-      client.get('/subscriptions'),
-      client.get('/complaints'),
-      client.get('/billing/invoices'),
-      client.get('/delivery-zones'),
-    ]).then(([c, p, s, co, i, z]) => {
-      setData({
-        customers: c.data.data,
-        products: p.data.data,
-        subscriptions: s.data.data,
-        complaints: co.data.data,
-        invoices: i.data.data,
-        zones: z.data.data,
-      });
-    }).finally(() => setLoading(false));
+    client.get('/reports/dashboard')
+      .then((res) => setData(res.data.data))
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="loading">Loading...</div>;
 
   const cards = [
-    { label: 'Customers', value: data?.customers.total ?? 0, color: '#3b82f6' },
-    { label: 'Products', value: data?.products.length ?? 0, color: '#10b981' },
-    { label: 'Subscriptions', value: data?.subscriptions.total ?? 0, color: '#f59e0b' },
-    { label: 'Complaints', value: data?.complaints.total ?? 0, color: '#ef4444' },
-    { label: 'Invoices', value: data?.invoices.total ?? 0, color: '#8b5cf6' },
-    { label: 'Delivery Zones', value: data?.zones.length ?? 0, color: '#ec4899' },
+    { label: 'Active Customers', value: data?.activeCustomers ?? 0, sub: `${data?.customers ?? 0} total`, color: '#3b82f6' },
+    { label: 'Revenue (Paid)', value: `₹${(data?.totalRevenue ?? 0).toLocaleString()}`, sub: `${data?.paidInvoices ?? 0} paid invoices`, color: '#10b981' },
+    { label: 'Outstanding', value: `₹${(data?.outstandingAmount ?? 0).toLocaleString()}`, sub: `${data?.overdueInvoices ?? 0} overdue`, color: '#ef4444' },
+    { label: 'Pending Complaints', value: data?.pendingComplaints ?? 0, sub: `${data?.complaints ?? 0} total`, color: '#f59e0b' },
+    { label: 'Active Subscriptions', value: data?.activeSubscriptions ?? 0, sub: `${data?.pausedSubscriptions ?? 0} paused`, color: '#8b5cf6' },
+    { label: 'Products', value: data?.products ?? 0, sub: `${data?.deliveryZones ?? 0} zones`, color: '#ec4899' },
   ];
 
   return (
@@ -53,6 +48,7 @@ export default function Dashboard() {
           <div key={c.label} className="stat-card" style={{ borderTopColor: c.color }}>
             <div className="stat-label">{c.label}</div>
             <div className="stat-value">{c.value}</div>
+            <div className="stat-sub">{c.sub}</div>
           </div>
         ))}
       </div>

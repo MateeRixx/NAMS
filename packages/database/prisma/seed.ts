@@ -56,7 +56,7 @@ async function main() {
     const testCustomer = await prisma.customer.create({
       data: {
         agencyId: agency.id,
-        customerCode: 'CUST001',
+        customerCode: 'CUST-0001',
         firstName: 'Test',
         lastName: 'Customer',
         phone: customerPhone,

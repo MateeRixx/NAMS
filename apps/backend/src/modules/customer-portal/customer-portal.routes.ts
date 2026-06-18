@@ -23,10 +23,19 @@ router.post('/addresses', customerPortalController.createAddress);
 router.patch('/addresses/:id', customerPortalController.updateAddress);
 router.delete('/addresses/:id', customerPortalController.deleteAddress);
 
+router.get('/onboarding', customerPortalController.getOnboardingStatus);
 router.get('/profile', customerPortalController.getProfile);
 router.patch('/profile', customerPortalController.updateProfile);
 
+router.post('/cart/estimate', customerPortalController.estimateCart);
+router.post('/cart/checkout', customerPortalController.checkoutCart);
+
 router.get('/notifications', customerPortalController.listNotifications);
 router.get('/notifications/unread-count', customerPortalController.getUnreadNotificationCount);
+
+router.get('/distribution-requests', customerPortalController.listMyDistributionRequests);
+router.post('/distribution-requests', customerPortalController.createMyDistributionRequest);
+router.get('/article-requests', customerPortalController.listMyArticleRequests);
+router.post('/article-requests', customerPortalController.createMyArticleRequest);
 
 export default router;

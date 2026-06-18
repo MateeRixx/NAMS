@@ -1,7 +1,15 @@
 import prisma from '@newsflow/database';
 import type { CreateComplaintDto, UpdateComplaintStatusDto } from './complaint.types.js';
 
-export async function createComplaint(data: CreateComplaintDto & { agencyId: string }) {
+export async function getNextComplaintNumber(agencyId: string): Promise<string> {
+  const year = new Date().getFullYear();
+  const count = await prisma.complaint.count({
+    where: { agencyId, createdAt: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) } },
+  });
+  return `COMP-${year}-${String(count + 1).padStart(4, '0')}`;
+}
+
+export async function createComplaint(data: CreateComplaintDto & { agencyId: string; complaintNumber: string }) {
   return prisma.complaint.create({ data: data as never });
 }
 

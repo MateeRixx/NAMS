@@ -19,7 +19,7 @@ export interface CustomerResponse {
   customerCode: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   status: string;
   createdAt: Date;

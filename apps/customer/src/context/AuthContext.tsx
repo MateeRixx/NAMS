@@ -14,9 +14,9 @@ interface CustomerUser {
 interface AuthContextType {
   user: CustomerUser | null;
   token: string | null;
-  login: (phone: string, otp: string) => Promise<void>;
-  register: (phone: string, otp: string, firstName: string, lastName: string, email?: string) => Promise<void>;
-  sendOtp: (phone: string) => Promise<void>;
+  login: (email: string, otp: string) => Promise<void>;
+  register: (email: string, otp: string, firstName: string, lastName: string, phone?: string) => Promise<void>;
+  sendEmailOtp: (email: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -31,12 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(localStorage.getItem('customer_token'));
   const [loading] = useState(false);
 
-  async function sendOtp(phone: string) {
-    await client.post('/auth/otp/send', { phone });
+  async function sendEmailOtp(email: string) {
+    await client.post('/auth/otp/send-email', { email });
   }
 
-  async function register(phone: string, otp: string, firstName: string, lastName: string, email?: string) {
-    const res = await client.post('/auth/customer/register', { phone, otp, firstName, lastName, email });
+  async function register(email: string, otp: string, firstName: string, lastName: string, phone?: string) {
+    const res = await client.post('/auth/customer/register', { email, otp, firstName, lastName, ...(phone ? { phone } : {}) });
     const { token: newToken, user: userData } = res.data.data;
     localStorage.setItem('customer_token', newToken);
     localStorage.setItem('customer_user', JSON.stringify(userData));
@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
   }
 
-  async function login(phone: string, otp: string) {
-    const res = await client.post('/auth/customer/otp/verify', { phone, otp });
+  async function login(email: string, otp: string) {
+    const res = await client.post('/auth/customer/otp/verify', { email, otp });
     const { token: newToken, user: userData } = res.data.data;
     localStorage.setItem('customer_token', newToken);
     localStorage.setItem('customer_user', JSON.stringify(userData));
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, sendOtp, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, register, sendEmailOtp, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

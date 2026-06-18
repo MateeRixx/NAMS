@@ -59,6 +59,17 @@ enum PaymentMethod {
   CASH
 }
 
+enum PaymentGatewayProvider {
+  RAZORPAY
+  MOCK
+}
+
+enum PaymentRefundStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
 enum NotificationChannel {
   EMAIL
   WHATSAPP
@@ -113,6 +124,8 @@ model Agency {
   complaintHistories  ComplaintHistory[]
   invoices            Invoice[]
   payments            Payment[]
+  paymentRefunds      PaymentRefund[]
+  paymentGatewayConfig PaymentGatewayConfig?
   notifications       Notification[]
   distributionRequests DistributionRequest[]
   articleRequests     ArticleRequest[]
@@ -145,7 +158,7 @@ model Customer {
   customerCode String
   firstName    String
   lastName     String
-  phone        String
+  phone        String?
   email        String?
   status       String   @default("ACTIVE")
   createdAt    DateTime @default(now())
@@ -163,9 +176,9 @@ model Customer {
   distributionRequests DistributionRequest[]
   articleRequests     ArticleRequest[]
 
+  @@index([agencyId, customerCode])
   @@index([agencyId])
   @@index([phone])
-  @@index([customerCode])
 }
 
 model Address {
@@ -245,6 +258,7 @@ model Product {
   agency           Agency            @relation(fields: [agencyId], references: [id])
   dayRates         ProductDayRate[]
   subscriptions    Subscription[]
+  articleRequests  ArticleRequest[]
 
   @@index([agencyId])
   @@index([name])
@@ -313,6 +327,7 @@ model Complaint {
   agencyId        String
   customerId      String
   subscriptionId  String?
+  complaintNumber String         @unique @default("")
   type            ComplaintType
   description     String?
   status          ComplaintStatus @default(PENDING)
@@ -327,6 +342,7 @@ model Complaint {
 
   @@index([agencyId])
   @@index([customerId])
+  @@index([complaintNumber])
   @@index([status])
   @@index([type])
 }
@@ -392,25 +408,33 @@ model InvoiceItem {
 }
 
 model Payment {
-  id                  String        @id @default(uuid())
-  agencyId            String
-  invoiceId           String
-  customerId          String
-  amount              Decimal
-  method              PaymentMethod
-  status              PaymentStatus @default(PENDING)
+  id                   String          @id @default(uuid())
+  agencyId             String
+  invoiceId            String
+  customerId           String
+  paymentNumber        String          @unique @default("")
+  amount               Decimal
+  method               PaymentMethod
+  status               PaymentStatus   @default(PENDING)
   transactionReference String?
-  paidAt              DateTime?
-  createdAt           DateTime      @default(now())
+  gatewayOrderId       String?
+  gatewayPaymentId     String?
+  failureReason        String?
+  attemptCount         Int             @default(0)
+  paidAt               DateTime?
+  createdAt            DateTime        @default(now())
 
-  agency   Agency  @relation(fields: [agencyId], references: [id])
-  invoice  Invoice @relation(fields: [invoiceId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
+  agency   Agency        @relation(fields: [agencyId], references: [id])
+  invoice  Invoice       @relation(fields: [invoiceId], references: [id])
+  customer Customer      @relation(fields: [customerId], references: [id])
+  refunds  PaymentRefund[]
 
   @@index([agencyId])
   @@index([invoiceId])
+  @@index([paymentNumber])
   @@index([status])
   @@index([paidAt])
+  @@index([gatewayOrderId])
 }
 
 model DistributionRequest {
@@ -434,22 +458,61 @@ model DistributionRequest {
 }
 
 model ArticleRequest {
-  id          String                @id @default(uuid())
-  agencyId    String
-  customerId  String
-  title       String
-  content     String
-  status      ArticleRequestStatus  @default(SUBMITTED)
-  reviewNotes String?
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id            String                @id @default(uuid())
+  agencyId      String
+  customerId    String
+  productId     String?
+  title         String
+  content       String
+  status        ArticleRequestStatus  @default(SUBMITTED)
+  publishInDate DateTime?
+  reviewNotes   String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   agency   Agency   @relation(fields: [agencyId], references: [id])
   customer Customer @relation(fields: [customerId], references: [id])
+  product  Product? @relation(fields: [productId], references: [id])
 
   @@index([agencyId])
   @@index([customerId])
+  @@index([productId])
   @@index([status])
+}
+
+model PaymentRefund {
+  id              String                @id @default(uuid())
+  agencyId        String
+  paymentId       String
+  amount          Decimal
+  reason          String?
+  status          PaymentRefundStatus   @default(PENDING)
+  gatewayRefundId String?
+  processedAt     DateTime?
+  createdAt       DateTime              @default(now())
+
+  agency  Agency  @relation(fields: [agencyId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
+  @@index([agencyId])
+  @@index([paymentId])
+  @@index([status])
+}
+
+model PaymentGatewayConfig {
+  id            String                @id @default(uuid())
+  agencyId      String                @unique
+  provider      PaymentGatewayProvider @default(RAZORPAY)
+  apiKey        String
+  apiSecret     String
+  webhookSecret String?
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+
+  @@index([agencyId])
 }
 
 model Notification {

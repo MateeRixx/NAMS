@@ -257,6 +257,15 @@ export async function deleteAddress(
   }
 }
 
+export async function getOnboardingStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await customerPortalService.getOnboardingStatus(req.user!.userId, req.user!.agencyId);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const result = await customerPortalService.getProfile(req.user!.userId, req.user!.agencyId);
@@ -312,6 +321,112 @@ export async function getUnreadNotificationCount(
       req.user!.userId
     );
     res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listMyDistributionRequests(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await customerPortalService.listMyDistributionRequests(
+      req.user!.userId,
+      req.user!.agencyId
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createMyDistributionRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await customerPortalService.createMyDistributionRequest(
+      req.user!.userId,
+      req.user!.agencyId,
+      req.body as { title: string; description?: string; requestedQuantity: number }
+    );
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listMyArticleRequests(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await customerPortalService.listMyArticleRequests(
+      req.user!.userId,
+      req.user!.agencyId
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function estimateCart(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await customerPortalService.estimateCart(
+      req.user!.userId,
+      req.user!.agencyId,
+      req.body as { productId: string; startDate?: string }[]
+    );
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function checkoutCart(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { items, payment } = req.body as {
+      items: { productId: string; startDate?: string }[];
+      payment?: { method: 'CASH' | 'ONLINE'; transactionReference?: string };
+    };
+    const result = await customerPortalService.checkoutCart(
+      req.user!.userId,
+      req.user!.agencyId,
+      req.user!.userId,
+      items,
+      payment
+    );
+    res.status(201).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createMyArticleRequest(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await customerPortalService.createMyArticleRequest(
+      req.user!.userId,
+      req.user!.agencyId,
+      req.body as { productId?: string; title: string; content: string; publishInDate?: string }
+    );
+    res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

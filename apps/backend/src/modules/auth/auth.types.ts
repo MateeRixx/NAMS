@@ -33,8 +33,17 @@ export interface SendOtpDto {
   phone: string;
 }
 
+export interface SendEmailOtpDto {
+  email: string;
+}
+
 export interface VerifyOtpDto {
   phone: string;
+  otp: string;
+}
+
+export interface VerifyEmailOtpDto {
+  email: string;
   otp: string;
 }
 
@@ -43,11 +52,11 @@ export interface ResetPasswordDto {
 }
 
 export interface CustomerRegisterDto {
-  phone: string;
+  email: string;
   otp: string;
   firstName: string;
   lastName: string;
-  email?: string;
+  phone?: string;
 }
 
 export interface CustomerAuthResponse {
@@ -57,7 +66,7 @@ export interface CustomerAuthResponse {
     customerCode: string;
     firstName: string;
     lastName: string;
-    phone: string;
+    phone: string | null;
     email: string | null;
     agencyId: string;
   };

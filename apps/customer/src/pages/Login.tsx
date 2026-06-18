@@ -3,21 +3,20 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const { login, sendOtp } = useAuth();
+  const { login, sendEmailOtp } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
   async function handleSendOtp() {
-    if (phone.length < 10) { setError('Enter a valid phone number'); return; }
+    if (!email.includes('@')) { setError('Enter a valid email address'); return; }
     setSending(true);
     setError('');
     try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      await sendOtp(formattedPhone);
+      await sendEmailOtp(email);
       setStep('otp');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to send OTP');
@@ -31,8 +30,7 @@ export default function Login() {
     setSending(true);
     setError('');
     try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      await login(formattedPhone, otp);
+      await login(email, otp);
       navigate('/', { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid OTP');
@@ -47,16 +45,15 @@ export default function Login() {
         <h1>NewsFlow</h1>
         <p className="subtitle">Customer Portal</p>
 
-        {step === 'phone' ? (
+        {step === 'email' ? (
           <>
             <input
-              type="tel"
-              placeholder="Enter your phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={15}
+              type="email"
+              placeholder="Enter your email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
-            <p className="hint">You'll receive a 6-digit OTP</p>
+            <p className="hint">You'll receive a 6-digit OTP via email</p>
             {error && <p className="error">{error}</p>}
             <button className="btn btn-primary btn-block" onClick={handleSendOtp} disabled={sending}>
               {sending ? 'Sending...' : 'Send OTP'}
@@ -67,7 +64,7 @@ export default function Login() {
           </>
         ) : (
           <>
-            <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>OTP sent to {phone}</p>
+            <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>OTP sent to {email}</p>
             <input
               type="text"
               placeholder="Enter 6-digit OTP"
@@ -79,8 +76,8 @@ export default function Login() {
             <button className="btn btn-primary btn-block" onClick={handleLogin} disabled={sending}>
               {sending ? 'Verifying...' : 'Login'}
             </button>
-            <button className="btn btn-block" onClick={() => { setStep('phone'); setOtp(''); setError(''); }} style={{ marginTop: '0.5rem' }}>
-              Change Phone
+            <button className="btn btn-block" onClick={() => { setStep('email'); setOtp(''); setError(''); }} style={{ marginTop: '0.5rem' }}>
+              Change Email
             </button>
           </>
         )}

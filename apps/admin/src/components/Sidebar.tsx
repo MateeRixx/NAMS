@@ -9,7 +9,11 @@ const links = [
   { to: '/delivery-zones', label: 'Delivery Zones', icon: '📍' },
   { to: '/delivery-sheet', label: 'Delivery Sheet', icon: '📋' },
   { to: '/billing', label: 'Billing', icon: '💰' },
+  { to: '/payments', label: 'Payments', icon: '💳' },
   { to: '/billing-charges', label: 'Charges', icon: '💳' },
+  { to: '/marketplace', label: 'Marketplace', icon: '🛒' },
+  { to: '/reports', label: 'Reports', icon: '📊' },
+  { to: '/audit-logs', label: 'Audit Logs', icon: '📜' },
   { to: '/notifications', label: 'Notifications', icon: '🔔' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ];

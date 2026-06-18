@@ -15,6 +15,7 @@ export interface ComplaintResponse {
   agencyId: string;
   customerId: string;
   subscriptionId: string | null;
+  complaintNumber: string;
   type: string;
   description: string | null;
   status: string;

@@ -2,6 +2,7 @@ import { NotFoundError, ConflictError, ValidationError } from '@newsflow/shared'
 import * as subscriptionRepository from './subscription.repository.js';
 import { createAndQueueNotification } from '../../services/notification.service.js';
 import { generateCancellationInvoice } from '../billing/billing.service.js';
+import { logAudit } from '../../services/audit.service.js';
 import type {
   CreateSubscriptionDto,
   PauseSubscriptionDto,
@@ -121,7 +122,8 @@ export async function getSubscription(id: string, agencyId: string): Promise<Sub
 
 export async function cancelSubscription(
   id: string,
-  agencyId: string
+  agencyId: string,
+  userId?: string
 ): Promise<SubscriptionResponse> {
   const sub = await subscriptionRepository.findSubscriptionById(id, agencyId);
   if (!sub) {
@@ -140,6 +142,16 @@ export async function cancelSubscription(
   }
 
   const updated = await subscriptionRepository.cancelSubscriptionWithEndDate(id, agencyId, cancelDate);
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Subscription',
+    entityId: id,
+    action: 'SUBSCRIPTION_CANCELLED',
+    oldValue: { status: sub.status },
+    newValue: { status: 'CANCELLED', endDate: cancelDate.toISOString() },
+  });
 
   const cust = await subscriptionRepository.findCustomerById(sub.customerId, agencyId);
   if (cust?.email) {
@@ -166,7 +178,8 @@ export async function cancelSubscription(
 export async function pauseSubscription(
   id: string,
   dto: PauseSubscriptionDto,
-  agencyId: string
+  agencyId: string,
+  userId?: string
 ): Promise<SubscriptionResponse> {
   const sub = await subscriptionRepository.findSubscriptionById(id, agencyId);
   if (!sub) {
@@ -199,6 +212,16 @@ export async function pauseSubscription(
 
   const updated = await subscriptionRepository.updateSubscriptionStatus(id, agencyId, 'PAUSED');
 
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Subscription',
+    entityId: id,
+    action: 'SUBSCRIPTION_PAUSED',
+    oldValue: { status: sub.status },
+    newValue: { status: 'PAUSED', pauseStart: dto.startDate, pauseEnd: dto.endDate },
+  });
+
   const cust = await subscriptionRepository.findCustomerById(sub.customerId, agencyId);
   if (cust?.email) {
     createAndQueueNotification({
@@ -221,7 +244,8 @@ export async function pauseSubscription(
 
 export async function resumeSubscription(
   id: string,
-  agencyId: string
+  agencyId: string,
+  userId?: string
 ): Promise<SubscriptionResponse> {
   const sub = await subscriptionRepository.findSubscriptionById(id, agencyId);
   if (!sub) {
@@ -233,6 +257,16 @@ export async function resumeSubscription(
   }
 
   const updated = await subscriptionRepository.updateSubscriptionStatus(id, agencyId, 'ACTIVE');
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Subscription',
+    entityId: id,
+    action: 'SUBSCRIPTION_RESUMED',
+    oldValue: { status: sub.status },
+    newValue: { status: 'ACTIVE' },
+  });
 
   const cust = await subscriptionRepository.findCustomerById(sub.customerId, agencyId);
   if (cust?.email) {

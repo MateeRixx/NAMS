@@ -31,11 +31,16 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
 
   WHATSAPP_PROVIDER: z.enum(['twilio', 'none']).default('none'),
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_FROM_NUMBER: z.string().optional(),
+  WHATSAPP_ACCOUNT_SID: z.string().optional(),
+  WHATSAPP_AUTH_TOKEN: z.string().optional(),
+  WHATSAPP_FROM_NUMBER: z.string().optional(),
 
   FCM_SERVER_KEY: z.string().optional(),
+
+  PAYMENT_PROVIDER: z.enum(['razorpay', 'mock']).default('mock'),
+  PAYMENT_KEY_ID: z.string().optional(),
+  PAYMENT_KEY_SECRET: z.string().optional(),
+  PAYMENT_WEBHOOK_SECRET: z.string().optional(),
 });
 
 function validateConfig() {

@@ -13,6 +13,10 @@ import Billing from './pages/Billing';
 import BillingCharges from './pages/BillingCharges';
 import Settings from './pages/Settings';
 import Notifications from './pages/Notifications';
+import Marketplace from './pages/Marketplace';
+import Reports from './pages/Reports';
+import AuditLogs from './pages/AuditLogs';
+import Payments from './pages/Payments';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -43,6 +47,10 @@ function AppRoutes() {
         <Route path="/billing-charges" element={<BillingCharges />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/audit-logs" element={<AuditLogs />} />
+        <Route path="/payments" element={<Payments />} />
       </Route>
     </Routes>
   );

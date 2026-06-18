@@ -1,5 +1,6 @@
 import { NotFoundError, ConflictError } from '@newsflow/shared';
 import * as productRepository from './product.repository.js';
+import { logAudit } from '../../services/audit.service.js';
 import type {
   CreateProductDto,
   UpdateProductDto,
@@ -72,34 +73,69 @@ export async function getProduct(id: string, agencyId: string): Promise<ProductR
 export async function updateProduct(
   id: string,
   dto: UpdateProductDto,
-  agencyId: string
+  agencyId: string,
+  userId?: string
 ): Promise<ProductResponse> {
   const product = await productRepository.findProductById(id, agencyId);
   if (!product) {
     throw new NotFoundError('Product');
   }
 
+  const oldData = { name: product.name, basePrice: Number(product.basePrice), isActive: product.isActive };
   const updated = await productRepository.updateProduct(id, agencyId, dto);
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Product',
+    entityId: id,
+    action: 'PRODUCT_UPDATED',
+    oldValue: oldData,
+    newValue: { name: updated.name, basePrice: Number(updated.basePrice), isActive: updated.isActive },
+  });
+
   return toProductResponse(updated);
 }
 
-export async function activateProduct(id: string, agencyId: string): Promise<ProductResponse> {
+export async function activateProduct(id: string, agencyId: string, userId?: string): Promise<ProductResponse> {
   const product = await productRepository.findProductById(id, agencyId);
   if (!product) {
     throw new NotFoundError('Product');
   }
 
   const updated = await productRepository.setProductActive(id, agencyId, true);
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Product',
+    entityId: id,
+    action: 'PRODUCT_ACTIVATED',
+    oldValue: { isActive: false },
+    newValue: { isActive: true },
+  });
+
   return toProductResponse(updated);
 }
 
-export async function deactivateProduct(id: string, agencyId: string): Promise<ProductResponse> {
+export async function deactivateProduct(id: string, agencyId: string, userId?: string): Promise<ProductResponse> {
   const product = await productRepository.findProductById(id, agencyId);
   if (!product) {
     throw new NotFoundError('Product');
   }
 
   const updated = await productRepository.setProductActive(id, agencyId, false);
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Product',
+    entityId: id,
+    action: 'PRODUCT_DEACTIVATED',
+    oldValue: { isActive: true },
+    newValue: { isActive: false },
+  });
+
   return toProductResponse(updated);
 }
 

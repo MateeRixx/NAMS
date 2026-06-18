@@ -1,6 +1,7 @@
 import { NotFoundError, ConflictError } from '@newsflow/shared';
 import prisma from '@newsflow/database';
 import * as customerRepository from './customer.repository.js';
+import { logAudit } from '../../services/audit.service.js';
 import type {
   CreateCustomerDto,
   UpdateCustomerDto,
@@ -18,7 +19,7 @@ function toCustomerResponse(customer: {
   customerCode: string;
   firstName: string;
   lastName: string;
-  phone: string;
+  phone: string | null;
   email: string | null;
   status: string;
   createdAt: Date;
@@ -131,6 +132,15 @@ export async function deleteCustomer(
   }
 
   await customerRepository.softDeleteCustomer(id, agencyId, deletedBy);
+
+  logAudit({
+    agencyId,
+    userId: deletedBy,
+    entityType: 'Customer',
+    entityId: id,
+    action: 'CUSTOMER_DELETED',
+    oldValue: { firstName: customer.firstName, lastName: customer.lastName, phone: customer.phone },
+  });
 }
 
 export async function listCustomers(
@@ -148,9 +158,9 @@ export async function getDeliverySheet(agencyId: string): Promise<{
   zones: {
     id: string;
     name: string;
-    customers: { name: string; phone: string; address: string; area: string; postalCode: string }[];
+    customers: { name: string; phone: string | null; address: string; area: string; postalCode: string }[];
   }[];
-  unzoned: { name: string; phone: string; address: string; area: string; postalCode: string }[];
+  unzoned: { name: string; phone: string | null; address: string; area: string; postalCode: string }[];
   generatedAt: string;
 }> {
   const customers = await prisma.customer.findMany({
@@ -180,7 +190,7 @@ export async function getDeliverySheet(agencyId: string): Promise<{
   >();
   const unzoned: {
     name: string;
-    phone: string;
+    phone: string | null;
     address: string;
     area: string;
     postalCode: string;
@@ -189,7 +199,7 @@ export async function getDeliverySheet(agencyId: string): Promise<{
   for (const c of customers) {
     const entry = {
       name: `${c.firstName} ${c.lastName}`.trim(),
-      phone: c.phone,
+      phone: c.phone ?? '',
       address: '',
       area: '',
       postalCode: '',

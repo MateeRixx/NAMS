@@ -27,17 +27,26 @@ export const sendOtpSchema = z.object({
   phone: z.string().regex(/^\+?[1-9]\d{9,14}$/),
 });
 
+export const sendOtpEmailSchema = z.object({
+  email: z.string().email(),
+});
+
 export const verifyOtpSchema = z.object({
   phone: z.string().regex(/^\+?[1-9]\d{9,14}$/),
   otp: z.string().length(6),
 });
 
+export const verifyEmailOtpSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+});
+
 export const customerRegisterSchema = z.object({
-  phone: z.string().regex(/^\+?[1-9]\d{9,14}$/),
+  email: z.string().email(),
   otp: z.string().length(6),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
-  email: z.string().email().optional(),
+  phone: z.string().optional(),
 });
 
 export const resetPasswordSchema = z.object({

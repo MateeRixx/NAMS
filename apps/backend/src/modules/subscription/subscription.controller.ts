@@ -38,7 +38,7 @@ export async function cancelSubscription(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await subscriptionService.cancelSubscription(id, req.user!.agencyId);
+    const result = await subscriptionService.cancelSubscription(id, req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -55,7 +55,8 @@ export async function pauseSubscription(
     const result = await subscriptionService.pauseSubscription(
       id,
       req.body as never,
-      req.user!.agencyId
+      req.user!.agencyId,
+      req.user!.userId
     );
     res.json({ success: true, data: result });
   } catch (error) {
@@ -70,7 +71,7 @@ export async function resumeSubscription(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await subscriptionService.resumeSubscription(id, req.user!.agencyId);
+    const result = await subscriptionService.resumeSubscription(id, req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

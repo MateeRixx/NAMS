@@ -30,6 +30,15 @@ export async function sendOtp(req: Request, res: Response, next: NextFunction): 
   }
 }
 
+export async function sendEmailOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.sendEmailOtp((req.body as { email: string }).email);
+    res.json({ success: true, data: { message: 'OTP sent to email' } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function verifyOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const body = req.body as { phone: string; otp: string };
@@ -59,8 +68,8 @@ export async function customerVerifyOtp(
   next: NextFunction
 ): Promise<void> {
   try {
-    const body = req.body as { phone: string; otp: string };
-    const result = await authService.customerVerifyOtp(body.phone, body.otp);
+    const body = req.body as { email: string; otp: string };
+    const result = await authService.customerVerifyOtp(body.email, body.otp);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

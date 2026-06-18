@@ -1,6 +1,7 @@
 import { NotFoundError, ValidationError } from '@newsflow/shared';
 import * as complaintRepository from './complaint.repository.js';
 import { createAndQueueNotification } from '../../services/notification.service.js';
+import { logAudit } from '../../services/audit.service.js';
 import type {
   CreateComplaintDto,
   UpdateComplaintStatusDto,
@@ -20,6 +21,7 @@ function toComplaintResponse(c: {
   agencyId: string;
   customerId: string;
   subscriptionId: string | null;
+  complaintNumber: string;
   type: string;
   description: string | null;
   status: string;
@@ -32,6 +34,7 @@ function toComplaintResponse(c: {
     agencyId: c.agencyId,
     customerId: c.customerId,
     subscriptionId: c.subscriptionId,
+    complaintNumber: c.complaintNumber,
     type: c.type,
     description: c.description,
     status: c.status,
@@ -78,7 +81,8 @@ export async function createComplaint(
     }
   }
 
-  const complaint = await complaintRepository.createComplaint({ ...dto, agencyId });
+  const complaintNumber = await complaintRepository.getNextComplaintNumber(agencyId);
+  const complaint = await complaintRepository.createComplaint({ ...dto, agencyId, complaintNumber });
 
   await complaintRepository.createHistoryEntry({
     complaintId: complaint.id,
@@ -86,6 +90,15 @@ export async function createComplaint(
     action: 'CREATED',
     notes: dto.description,
     performedBy: userId,
+  });
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Complaint',
+    entityId: complaint.id,
+    action: 'COMPLAINT_CREATED',
+    newValue: { type: dto.type, status: 'PENDING', description: dto.description },
   });
 
   if (customer.email) {
@@ -150,6 +163,16 @@ export async function updateComplaintStatus(
     action: `STATUS_CHANGED:${complaint.status}→${dto.status}`,
     notes: dto.notes,
     performedBy: userId,
+  });
+
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Complaint',
+    entityId: id,
+    action: `COMPLAINT_STATUS_CHANGED:${complaint.status}→${dto.status}`,
+    oldValue: { status: complaint.status },
+    newValue: { status: dto.status, notes: dto.notes },
   });
 
   if (dto.status === 'RESOLVED' && complaint.customerId) {

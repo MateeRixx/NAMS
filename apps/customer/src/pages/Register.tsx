@@ -3,26 +3,25 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-  const { register, sendOtp } = useAuth();
+  const { register, sendEmailOtp } = useAuth();
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState<'form' | 'otp'>('form');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
 
   async function handleSendOtp() {
-    if (phone.length < 10) { setError('Enter a valid phone number'); return; }
+    if (!email.includes('@')) { setError('Enter a valid email address'); return; }
     if (!firstName.trim()) { setError('Enter your first name'); return; }
     if (!lastName.trim()) { setError('Enter your last name'); return; }
     setSending(true);
     setError('');
     try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      await sendOtp(formattedPhone);
+      await sendEmailOtp(email);
       setStep('otp');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to send OTP');
@@ -36,8 +35,7 @@ export default function Register() {
     setSending(true);
     setError('');
     try {
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      await register(formattedPhone, otp, firstName.trim(), lastName.trim(), email.trim() || undefined);
+      await register(email, otp, firstName.trim(), lastName.trim(), phone.trim() || undefined);
       navigate('/', { replace: true });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -55,11 +53,10 @@ export default function Register() {
         {step === 'form' ? (
           <>
             <input
-              type="tel"
-              placeholder="Phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={15}
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
             <input
               type="text"
@@ -76,10 +73,11 @@ export default function Register() {
               maxLength={100}
             />
             <input
-              type="email"
-              placeholder="Email (optional)"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="tel"
+              placeholder="Phone (optional)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={15}
             />
             {error && <p className="error">{error}</p>}
             <button className="btn btn-primary btn-block" onClick={handleSendOtp} disabled={sending}>
@@ -88,7 +86,7 @@ export default function Register() {
           </>
         ) : (
           <>
-            <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>OTP sent to {phone}</p>
+            <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>OTP sent to {email}</p>
             <input
               type="text"
               placeholder="Enter 6-digit OTP"

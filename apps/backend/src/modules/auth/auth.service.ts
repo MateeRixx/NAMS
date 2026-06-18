@@ -5,6 +5,8 @@ import prisma from '@newsflow/database';
 import { config } from '../../config/index.js';
 import { getRedis } from '../../config/redis.js';
 import * as authRepository from './auth.repository.js';
+import * as customerRepository from '../customer/customer.repository.js';
+import { sendEmail } from '../../services/email.service.js';
 import type {
   RegisterDto,
   LoginDto,
@@ -122,6 +124,28 @@ export async function sendOtp(phone: string): Promise<void> {
   console.log(`[DEV] OTP for ${phone}: ${otp}`);
 }
 
+export async function sendEmailOtp(email: string): Promise<void> {
+  const redis = getRedis();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  await redis.set(`otp:email:${email}`, otp, 'EX', 300);
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
+      <h2 style="color: #1a56db;">NewsFlow Verification</h2>
+      <p>Your OTP for signup is:</p>
+      <div style="font-size: 32px; font-weight: 700; letter-spacing: 8px; text-align: center; padding: 20px; background: #f3f4f6; border-radius: 8px; margin: 16px 0;">
+        ${otp}
+      </div>
+      <p>This OTP is valid for <strong>5 minutes</strong>.</p>
+      <p style="color: #6b7280; font-size: 13px;">If you did not request this, please ignore this email.</p>
+    </div>
+  `;
+
+  await sendEmail({ to: email, subject: 'Your NewsFlow OTP', html });
+  console.log(`[DEV] Email OTP for ${email}: ${otp}`);
+}
+
 export async function verifyOtp(phone: string, otp: string): Promise<AuthResponse> {
   const redis = getRedis();
   const storedOtp = await redis.get(`otp:${phone}`);
@@ -161,19 +185,18 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
   };
 }
 
-export async function customerVerifyOtp(phone: string, otp: string): Promise<CustomerAuthResponse> {
+export async function customerVerifyOtp(email: string, otp: string): Promise<CustomerAuthResponse> {
   const redis = getRedis();
-  const storedOtp = await redis.get(`otp:${phone}`);
+  const storedOtp = await redis.get(`otp:email:${email}`);
 
   if (!storedOtp || storedOtp !== otp) {
     throw new AuthenticationError('Invalid or expired OTP');
   }
 
-  await redis.del(`otp:${phone}`);
+  await redis.del(`otp:email:${email}`);
 
-  const customer = await prisma.customer.findFirst({
-    where: { phone, deletedAt: null },
-  });
+  const agency = await prisma.agency.findFirst();
+  const customer = agency ? await customerRepository.findCustomerByEmail(email, agency.id) : null;
 
   if (!customer) {
     throw new NotFoundError('Customer');
@@ -201,32 +224,23 @@ export async function customerVerifyOtp(phone: string, otp: string): Promise<Cus
 
 export async function customerRegister(dto: CustomerRegisterDto): Promise<CustomerAuthResponse> {
   const redis = getRedis();
-  const storedOtp = await redis.get(`otp:${dto.phone}`);
+  const storedOtp = await redis.get(`otp:email:${dto.email}`);
   if (!storedOtp || storedOtp !== dto.otp) {
     throw new AuthenticationError('Invalid or expired OTP');
   }
-  await redis.del(`otp:${dto.phone}`);
-
-  const existing = await prisma.customer.findFirst({
-    where: { phone: dto.phone, deletedAt: null },
-  });
-  if (existing) {
-    throw new ConflictError('Customer with this phone already exists');
-  }
+  await redis.del(`otp:email:${dto.email}`);
 
   const agency = await prisma.agency.findFirst();
   if (!agency) {
     throw new NotFoundError('Agency');
   }
 
-  const lastCustomer = await prisma.customer.findFirst({
-    where: { agencyId: agency.id },
-    orderBy: { customerCode: 'desc' },
-    select: { customerCode: true },
-  });
-  const customerCode = !lastCustomer
-    ? 'CUST-0001'
-    : `CUST-${String(parseInt(lastCustomer.customerCode.replace('CUST-', ''), 10) + 1).padStart(4, '0')}`;
+  const existing = await customerRepository.findCustomerByEmail(dto.email, agency.id);
+  if (existing) {
+    throw new ConflictError('Customer with this email already exists');
+  }
+
+  const customerCode = await customerRepository.getNextCustomerCode(agency.id);
 
   const customer = await prisma.customer.create({
     data: {
@@ -234,8 +248,8 @@ export async function customerRegister(dto: CustomerRegisterDto): Promise<Custom
       customerCode,
       firstName: dto.firstName,
       lastName: dto.lastName,
-      phone: dto.phone,
-      email: dto.email ?? null,
+      phone: dto.phone ?? null,
+      email: dto.email,
       status: 'ACTIVE',
     },
   });

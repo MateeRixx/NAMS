@@ -31,7 +31,7 @@ export async function updateProduct(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await productService.updateProduct(id, req.body as never, req.user!.agencyId);
+    const result = await productService.updateProduct(id, req.body as never, req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -45,7 +45,7 @@ export async function activateProduct(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await productService.activateProduct(id, req.user!.agencyId);
+    const result = await productService.activateProduct(id, req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -59,7 +59,7 @@ export async function deactivateProduct(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await productService.deactivateProduct(id, req.user!.agencyId);
+    const result = await productService.deactivateProduct(id, req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

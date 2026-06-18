@@ -3,6 +3,7 @@ import * as billingRepository from './billing.repository.js';
 import * as billingChargeRepository from '../billing-charge/billing-charge.repository.js';
 import { generateAndStoreInvoicePdf } from '../../services/pdf.service.js';
 import { createAndQueueNotification } from '../../services/notification.service.js';
+import { logAudit } from '../../services/audit.service.js';
 import { config } from '../../config/index.js';
 import type { GenerateInvoiceDto, InvoiceResponse, InvoiceListItem } from './billing.types.js';
 
@@ -78,7 +79,8 @@ function getDateRange(year: number, month: number): { start: Date; end: Date } {
 
 export async function generateInvoice(
   dto: GenerateInvoiceDto,
-  agencyId: string
+  agencyId: string,
+  userId?: string
 ): Promise<InvoiceResponse> {
   const customer = await billingRepository.findCustomerById(dto.customerId, agencyId);
   if (!customer) {
@@ -289,6 +291,15 @@ export async function generateInvoice(
     }).catch((err) => console.error('[BillingService] Failed to queue notification:', err));
   }
 
+  logAudit({
+    agencyId,
+    userId,
+    entityType: 'Invoice',
+    entityId: invoice!.id,
+    action: 'INVOICE_GENERATED',
+    newValue: { invoiceNumber, totalAmount, billingMonth: dto.billingMonth, billingYear: dto.billingYear },
+  });
+
   return toInvoiceResponse(invoice!);
 }
 
@@ -368,7 +379,7 @@ export async function getInvoicePdf(id: string, agencyId: string): Promise<Buffe
       billingYear: String(invoice.billingYear),
       customerName,
       customerAddress: addressStr,
-      customerPhone: customer.phone,
+      customerPhone: customer.phone ?? '',
       customerCode: customer.customerCode,
       invoiceStatus: invoice.status,
       items,

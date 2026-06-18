@@ -18,6 +18,10 @@ import billingRoutes from './modules/billing/billing.routes.js';
 import billingChargeRoutes from './modules/billing-charge/billing-charge.routes.js';
 import customerPortalRoutes from './modules/customer-portal/customer-portal.routes.js';
 import notificationRoutes from './modules/notification/notification.routes.js';
+import marketplaceRoutes from './modules/marketplace/marketplace.routes.js';
+import reportingRoutes from './modules/reporting/reporting.routes.js';
+import auditRoutes from './modules/audit/audit.routes.js';
+import paymentRoutes from './modules/payment/payment.routes.js';
 
 const app: Express = express();
 
@@ -29,6 +33,21 @@ app.use(
   })
 );
 app.use(compression());
+
+app.use((req, _res, next) => {
+  if (req.path.startsWith(`${config.API_PREFIX}/payments/webhook`)) {
+    let data = '';
+    req.on('data', (chunk: Buffer) => { data += chunk.toString('utf8'); });
+    req.on('end', () => {
+      try { req.body = JSON.parse(data); } catch { req.body = {}; }
+      (req as unknown as Record<string, unknown>)['rawBody'] = data;
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
@@ -56,6 +75,10 @@ app.use(`${config.API_PREFIX}/billing`, billingRoutes);
 app.use(`${config.API_PREFIX}/billing-charges`, billingChargeRoutes);
 app.use(`${config.API_PREFIX}/customer-portal`, customerPortalRoutes);
 app.use(`${config.API_PREFIX}/notifications`, notificationRoutes);
+app.use(`${config.API_PREFIX}/marketplace`, marketplaceRoutes);
+app.use(`${config.API_PREFIX}/reports`, reportingRoutes);
+app.use(`${config.API_PREFIX}/audit-logs`, auditRoutes);
+app.use(`${config.API_PREFIX}/payments`, paymentRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
