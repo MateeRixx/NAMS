@@ -3,6 +3,7 @@ export interface CreateComplaintDto {
   subscriptionId?: string;
   type: 'MISSED_DELIVERY' | 'DAMAGED_PAPER' | 'WRONG_PRODUCT' | 'LATE_DELIVERY' | 'OTHER';
   description?: string;
+  complaintDate?: string;
 }
 
 export interface UpdateComplaintStatusDto {
@@ -19,6 +20,7 @@ export interface ComplaintResponse {
   type: string;
   description: string | null;
   status: string;
+  complaintDate: Date | null;
   resolvedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

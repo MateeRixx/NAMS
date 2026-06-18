@@ -330,6 +330,7 @@ model Complaint {
   complaintNumber String         @unique @default("")
   type            ComplaintType
   description     String?
+  complaintDate   DateTime?
   status          ComplaintStatus @default(PENDING)
   resolvedAt      DateTime?
   createdAt       DateTime        @default(now())

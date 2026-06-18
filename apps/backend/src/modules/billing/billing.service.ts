@@ -211,6 +211,33 @@ export async function generateInvoice(
     ? Math.round(Number(deliveryZone.monthlyCharge.toString()) * 100) / 100
     : 0;
 
+  const resolvedComplaints = await billingRepository.findResolvedComplaintsInPeriod(
+    dto.customerId,
+    agencyId,
+    periodStart,
+    periodEnd
+  );
+
+  let totalComplaintCredit = 0;
+  for (const complaint of resolvedComplaints) {
+    const sub = complaint.subscription;
+    if (!sub) continue;
+    const dateForRate = complaint.complaintDate ?? complaint.createdAt;
+    const dayOfWeek = dateForRate.getDay();
+    const dayRate = await billingRepository.findDayRateForProduct(sub.productId, dayOfWeek);
+    const creditAmount = dayRate ?? Number(sub.product.basePrice.toString());
+    const roundedCredit = Math.round(creditAmount * 100) / 100;
+    const dateStr = dateForRate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    invoiceItems.push({
+      productId: sub.productId,
+      description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${sub.product.name})`,
+      quantity: 1,
+      unitPrice: -roundedCredit,
+      amount: -roundedCredit,
+    });
+    totalComplaintCredit += roundedCredit;
+  }
+
   const unresolvedComplaints = await billingRepository.findUnresolvedComplaintsInPeriod(
     dto.customerId,
     agencyId,
@@ -515,6 +542,33 @@ export async function generateCancellationInvoice(
   const deliveryCharges = deliveryZone
     ? Math.round(Number(deliveryZone.monthlyCharge.toString()) * 100) / 100
     : 0;
+
+  const resolvedComplaints = await billingRepository.findResolvedComplaintsInPeriod(
+    customerId,
+    agencyId,
+    periodStart,
+    periodEnd
+  );
+
+  let totalComplaintCredit = 0;
+  for (const complaint of resolvedComplaints) {
+    const sub = complaint.subscription;
+    if (!sub) continue;
+    const dateForRate = complaint.complaintDate ?? complaint.createdAt;
+    const dayOfWeek = dateForRate.getDay();
+    const dayRate = await billingRepository.findDayRateForProduct(sub.productId, dayOfWeek);
+    const creditAmount = dayRate ?? Number(sub.product.basePrice.toString());
+    const roundedCredit = Math.round(creditAmount * 100) / 100;
+    const dateStr = dateForRate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    invoiceItems.push({
+      productId: sub.productId,
+      description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${sub.product.name})`,
+      quantity: 1,
+      unitPrice: -roundedCredit,
+      amount: -roundedCredit,
+    });
+    totalComplaintCredit += roundedCredit;
+  }
 
   const unresolvedComplaints = await billingRepository.findUnresolvedComplaintsInPeriod(
     customerId,

@@ -37,6 +37,14 @@ export async function findActiveSubscriptionsInPeriod(
   });
 }
 
+export async function findDayRateForProduct(productId: string, dayOfWeek: number): Promise<number | null> {
+  const rate = await prisma.productDayRate.findUnique({
+    where: { productId_dayOfWeek: { productId, dayOfWeek } },
+    select: { price: true },
+  });
+  return rate ? Number(rate.price.toString()) : null;
+}
+
 export async function findProductDayRates(productId: string) {
   return prisma.productDayRate.findMany({
     where: { productId },
@@ -49,6 +57,29 @@ export async function findPrimaryAddressZone(customerId: string, agencyId: strin
     include: { deliveryZone: true },
   });
   return address?.deliveryZone ?? null;
+}
+
+export async function findResolvedComplaintsInPeriod(
+  customerId: string,
+  agencyId: string,
+  startDate: Date,
+  endDate: Date
+) {
+  return prisma.complaint.findMany({
+    where: {
+      customerId,
+      agencyId,
+      status: 'RESOLVED',
+      AND: [
+        { createdAt: { gte: startDate, lte: endDate } },
+      ],
+    },
+    include: {
+      subscription: {
+        include: { product: { select: { id: true, name: true, basePrice: true } } },
+      },
+    },
+  });
 }
 
 export async function findUnresolvedComplaintsInPeriod(

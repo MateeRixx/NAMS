@@ -25,6 +25,7 @@ function toComplaintResponse(c: {
   type: string;
   description: string | null;
   status: string;
+  complaintDate: Date | null;
   resolvedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -38,6 +39,7 @@ function toComplaintResponse(c: {
     type: c.type,
     description: c.description,
     status: c.status,
+    complaintDate: c.complaintDate,
     resolvedAt: c.resolvedAt,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
@@ -82,7 +84,16 @@ export async function createComplaint(
   }
 
   const complaintNumber = await complaintRepository.getNextComplaintNumber(agencyId);
-  const complaint = await complaintRepository.createComplaint({ ...dto, agencyId, complaintNumber });
+  const complaintDate = dto.complaintDate ? new Date(dto.complaintDate) : null;
+  const complaint = await complaintRepository.createComplaint({
+    customerId: dto.customerId,
+    subscriptionId: dto.subscriptionId,
+    type: dto.type,
+    description: dto.description,
+    complaintDate,
+    agencyId,
+    complaintNumber,
+  });
 
   await complaintRepository.createHistoryEntry({
     complaintId: complaint.id,

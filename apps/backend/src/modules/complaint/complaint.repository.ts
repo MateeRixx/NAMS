@@ -1,5 +1,5 @@
 import prisma from '@newsflow/database';
-import type { CreateComplaintDto, UpdateComplaintStatusDto } from './complaint.types.js';
+import type { UpdateComplaintStatusDto } from './complaint.types.js';
 
 export async function getNextComplaintNumber(agencyId: string): Promise<string> {
   const year = new Date().getFullYear();
@@ -9,8 +9,9 @@ export async function getNextComplaintNumber(agencyId: string): Promise<string> 
   return `COMP-${year}-${String(count + 1).padStart(4, '0')}`;
 }
 
-export async function createComplaint(data: CreateComplaintDto & { agencyId: string; complaintNumber: string }) {
-  return prisma.complaint.create({ data: data as never });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function createComplaint(data: any) {
+  return prisma.complaint.create({ data });
 }
 
 export async function findComplaintById(id: string, agencyId: string) {
