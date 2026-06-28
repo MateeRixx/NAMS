@@ -31,6 +31,7 @@ interface InvoiceData {
   deliveryCharges: number;
   discountAmount: number;
   taxAmount: number;
+  taxRate: number;
   previousBalance: number;
   totalAmount: number;
 }
@@ -214,9 +215,10 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     if (data.discountAmount > 0) {
       summaryRows.push({ label: 'SLA Penalty Discount', value: `-${formatCurrency(data.discountAmount)}`, color: COLORS.danger });
     }
+    const halfRate = data.taxRate / 2;
     const taxHalf = data.taxAmount / 2;
-    summaryRows.push({ label: 'SGST (9%)', value: formatCurrency(taxHalf) });
-    summaryRows.push({ label: 'CGST (9%)', value: formatCurrency(taxHalf) });
+    summaryRows.push({ label: `SGST (${halfRate}%)`, value: formatCurrency(taxHalf) });
+    summaryRows.push({ label: `CGST (${halfRate}%)`, value: formatCurrency(taxHalf) });
 
     for (const row of summaryRows) {
       doc.fillColor(row.color ?? COLORS.text).font(row.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(FONT_SIZE);

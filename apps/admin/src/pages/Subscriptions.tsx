@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 
+interface Customer { id: string; firstName: string; lastName: string; }
+interface Product { id: string; name: string; }
 interface Subscription {
   id: string;
   customerId: string;
@@ -9,46 +11,168 @@ interface Subscription {
   endDate: string | null;
   status: string;
   createdAt: string;
+  customer?: Customer;
+  product?: Product;
 }
 
 export default function Subscriptions() {
   const [subs, setSubs] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ customerId: '', productId: '', startDate: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [cancelId, setCancelId] = useState<string | null>(null);
+  const [msg, setMsg] = useState('');
 
-  useEffect(() => {
-    client.get('/subscriptions')
-      .then((res) => setSubs(res.data.data))
-      .finally(() => setLoading(false));
-  }, []);
+  async function load() {
+    setLoading(true);
+    try {
+      const [subRes, custRes, prodRes] = await Promise.all([
+        client.get('/subscriptions'),
+        client.get('/customers'),
+        client.get('/products'),
+      ]);
+      setSubs(subRes.data.data);
+      setCustomers(custRes.data.data);
+      setProducts(prodRes.data.data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleCreate() {
+    if (!form.customerId || !form.productId || !form.startDate) return;
+    setSubmitting(true);
+    setMsg('');
+    try {
+      await client.post('/subscriptions', form);
+      setShowForm(false);
+      setForm({ customerId: '', productId: '', startDate: '' });
+      await load();
+      setMsg('Subscription created');
+    } catch { setMsg('Failed to create subscription'); }
+    finally { setSubmitting(false); }
+  }
+
+  async function handleCancel(id: string) {
+    setSubmitting(true);
+    setMsg('');
+    try {
+      await client.patch(`/subscriptions/${id}/cancel`);
+      setCancelId(null);
+      await load();
+      setMsg('Subscription cancelled');
+    } catch { setMsg('Failed to cancel subscription'); }
+    finally { setSubmitting(false); }
+  }
+
+  const filtered = statusFilter ? subs.filter((s) => s.status === statusFilter) : subs;
 
   return (
     <div>
-      <h1>Subscriptions</h1>
-      {loading ? <div className="loading">Loading...</div> : (
+      <div className="page-header">
+        <h1>Subscriptions</h1>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
+            <option value="">All Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="PAUSED">Paused</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : '+ New Subscription'}
+          </button>
+        </div>
+      </div>
+
+      {msg && <div className="card" style={{ background: '#d1fae5', marginBottom: '1rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>{msg}</div>}
+
+      {showForm && (
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <h3>New Subscription</h3>
+          <div className="form-row">
+            <div className="input-group">
+              <label>Customer</label>
+              <select className="select" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })}>
+                <option value="">Select customer...</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group">
+              <label>Product</label>
+              <select className="select" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })}>
+                <option value="">Select product...</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="input-group">
+            <label>Start Date</label>
+            <input className="input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+          </div>
+          <button className="btn btn-primary" onClick={handleCreate} disabled={submitting || !form.customerId || !form.productId || !form.startDate}>
+            {submitting ? 'Creating...' : 'Create Subscription'}
+          </button>
+        </div>
+      )}
+
+      {loading ? <div className="loading">Loading...</div> : filtered.length === 0 ? (
+        <div className="empty-state"><p>No subscriptions found</p></div>
+      ) : (
         <table className="table">
           <thead>
             <tr>
-              <th>Customer ID</th>
-              <th>Product ID</th>
+              <th>Customer</th>
+              <th>Product</th>
               <th>Start Date</th>
               <th>End Date</th>
               <th>Status</th>
               <th>Created</th>
+              <th />
             </tr>
           </thead>
           <tbody>
-            {subs.map((s) => (
+            {filtered.map((s) => (
               <tr key={s.id}>
-                <td className="mono">{s.customerId.slice(0, 8)}...</td>
-                <td className="mono">{s.productId.slice(0, 8)}...</td>
+                <td>{s.customer ? `${s.customer.firstName} ${s.customer.lastName}` : <span className="mono">{s.customerId.slice(0, 8)}...</span>}</td>
+                <td>{s.product?.name ?? <span className="mono">{s.productId.slice(0, 8)}...</span>}</td>
                 <td>{new Date(s.startDate).toLocaleDateString()}</td>
                 <td>{s.endDate ? new Date(s.endDate).toLocaleDateString() : '-'}</td>
                 <td><span className={`badge badge-${s.status.toLowerCase()}`}>{s.status}</span></td>
                 <td>{new Date(s.createdAt).toLocaleDateString()}</td>
+                <td>
+                  {s.status === 'ACTIVE' && (
+                    <button className="btn btn-sm btn-danger" onClick={() => setCancelId(s.id)}>Cancel</button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {cancelId && (
+        <div className="modal-overlay" onClick={() => setCancelId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Cancel Subscription</h3>
+            <p>A final invoice will be generated for days used. This cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setCancelId(null)}>Keep</button>
+              <button className="btn btn-danger" onClick={() => handleCancel(cancelId)} disabled={submitting}>
+                {submitting ? 'Cancelling...' : 'Yes, Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

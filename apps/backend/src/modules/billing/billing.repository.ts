@@ -140,8 +140,10 @@ export async function createInvoiceWithItems(data: {
   deliveryCharges: number;
   discountAmount: number;
   taxAmount: number;
+  taxRate: number;
   previousBalance: number;
   totalAmount: number;
+  lockedAt: Date;
   status: string;
   generatedAt: Date;
   items: {
@@ -164,8 +166,10 @@ export async function createInvoiceWithItems(data: {
         deliveryCharges: data.deliveryCharges,
         discountAmount: data.discountAmount,
         taxAmount: data.taxAmount,
+        taxRate: data.taxRate,
         previousBalance: data.previousBalance,
         totalAmount: data.totalAmount,
+        lockedAt: data.lockedAt,
         status: data.status as never,
         generatedAt: data.generatedAt,
       },

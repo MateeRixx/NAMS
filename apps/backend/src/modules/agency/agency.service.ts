@@ -10,6 +10,7 @@ function toResponse(agency: {
   address: string | null;
   gstNumber: string | null;
   logoUrl: string | null;
+  taxRate: number;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +23,7 @@ function toResponse(agency: {
     address: agency.address,
     gstNumber: agency.gstNumber,
     logoUrl: agency.logoUrl,
+    taxRate: agency.taxRate,
     status: agency.status,
     createdAt: agency.createdAt,
     updatedAt: agency.updatedAt,

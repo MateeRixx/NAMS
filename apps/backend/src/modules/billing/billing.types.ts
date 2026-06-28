@@ -15,8 +15,10 @@ export interface InvoiceResponse {
   deliveryCharges: number;
   discountAmount: number;
   taxAmount: number;
+  taxRate: number;
   previousBalance: number;
   totalAmount: number;
+  lockedAt: Date | null;
   status: string;
   generatedAt: Date;
   createdAt: Date;

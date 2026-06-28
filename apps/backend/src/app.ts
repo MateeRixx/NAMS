@@ -6,6 +6,7 @@ import { config } from './config/index.js';
 import { requestLogger } from './middleware/requestLogger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { notFound } from './middleware/notFound.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
 import healthRoutes from './routes/health.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import agencyRoutes from './modules/agency/agency.routes.js';
@@ -51,6 +52,7 @@ app.use((req, _res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
+app.use(rateLimiter);
 
 app.get('/', (_req, res) => {
   res.json({

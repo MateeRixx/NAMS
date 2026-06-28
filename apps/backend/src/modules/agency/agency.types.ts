@@ -5,6 +5,7 @@ export interface UpdateAgencyDto {
   address?: string;
   gstNumber?: string;
   logoUrl?: string;
+  taxRate?: number;
 }
 
 export interface AgencyResponse {
@@ -15,6 +16,7 @@ export interface AgencyResponse {
   address: string | null;
   gstNumber: string | null;
   logoUrl: string | null;
+  taxRate: number;
   status: string;
   createdAt: Date;
   updatedAt: Date;

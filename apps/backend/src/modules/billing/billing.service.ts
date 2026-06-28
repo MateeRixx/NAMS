@@ -7,7 +7,6 @@ import { logAudit } from '../../services/audit.service.js';
 import { config } from '../../config/index.js';
 import type { GenerateInvoiceDto, InvoiceResponse, InvoiceListItem } from './billing.types.js';
 
-const TAX_RATE = 0.18;
 const SLA_PENALTY_THRESHOLD = 3;
 const SLA_DISCOUNT_RATE = 0.15;
 
@@ -22,8 +21,10 @@ function toInvoiceResponse(inv: {
   deliveryCharges: { toString: () => string };
   discountAmount: { toString: () => string };
   taxAmount: { toString: () => string };
+  taxRate: number;
   previousBalance: { toString: () => string };
   totalAmount: { toString: () => string };
+  lockedAt: Date | null;
   status: string;
   generatedAt: Date;
   createdAt: Date;
@@ -49,8 +50,10 @@ function toInvoiceResponse(inv: {
     deliveryCharges: Number(inv.deliveryCharges.toString()),
     discountAmount: Number(inv.discountAmount.toString()),
     taxAmount: Number(inv.taxAmount.toString()),
+    taxRate: inv.taxRate,
     previousBalance: Number(inv.previousBalance.toString()),
     totalAmount: Number(inv.totalAmount.toString()),
+    lockedAt: inv.lockedAt,
     status: inv.status,
     generatedAt: inv.generatedAt,
     createdAt: inv.createdAt,
@@ -98,6 +101,10 @@ export async function generateInvoice(
   if (existing) {
     throw new ConflictError(`Invoice already exists for ${dto.billingMonth}/${dto.billingYear}`);
   }
+
+  const agency = await billingRepository.findAgencyById(agencyId);
+  const taxRate = agency?.taxRate ?? 18;
+  const taxRateDecimal = taxRate / 100;
 
   const subscriptions = await billingRepository.findActiveSubscriptionsInPeriod(
     dto.customerId,
@@ -200,10 +207,6 @@ export async function generateInvoice(
     }
   }
 
-  if (invoiceItems.length === 0) {
-    throw new NotFoundError('No billable days found after excluding pauses');
-  }
-
   const subtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
 
   const deliveryZone = await billingRepository.findPrimaryAddressZone(dto.customerId, agencyId);
@@ -251,7 +254,7 @@ export async function generateInvoice(
   }
 
   const taxableAmount = subtotal + deliveryCharges - discountAmount;
-  const taxAmount = Math.round(taxableAmount * TAX_RATE * 100) / 100;
+  const taxAmount = Math.round(taxableAmount * taxRateDecimal * 100) / 100;
 
   const previousBalance = await billingRepository.sumUnpaidPreviousInvoices(
     dto.customerId,
@@ -279,6 +282,7 @@ export async function generateInvoice(
   );
   const invoiceNumber = `INV-${dto.billingYear}${String(dto.billingMonth).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
 
+  const now = new Date();
   const invoice = await billingRepository.createInvoiceWithItems({
     agencyId,
     customerId: dto.customerId,
@@ -289,10 +293,12 @@ export async function generateInvoice(
     deliveryCharges,
     discountAmount,
     taxAmount,
+    taxRate,
     previousBalance,
     totalAmount,
+    lockedAt: now,
     status: 'GENERATED',
-    generatedAt: new Date(),
+    generatedAt: now,
     items: invoiceItems,
   });
 
@@ -414,6 +420,7 @@ export async function getInvoicePdf(id: string, agencyId: string): Promise<Buffe
       deliveryCharges: Number(invoice.deliveryCharges.toString()),
       discountAmount: Number(invoice.discountAmount.toString()),
       taxAmount: Number(invoice.taxAmount.toString()),
+      taxRate: invoice.taxRate,
       previousBalance: Number(invoice.previousBalance?.toString() ?? '0'),
       totalAmount: Number(invoice.totalAmount.toString()),
     },
@@ -433,6 +440,10 @@ export async function generateCancellationInvoice(
   if (!customer) {
     throw new NotFoundError('Customer');
   }
+
+  const agency = await billingRepository.findAgencyById(agencyId);
+  const taxRate = agency?.taxRate ?? 18;
+  const taxRateDecimal = taxRate / 100;
 
   const month = cancelDate.getMonth() + 1;
   const year = cancelDate.getFullYear();
@@ -583,13 +594,14 @@ export async function generateCancellationInvoice(
   }
 
   const taxableAmount = subtotal + deliveryCharges - discountAmount;
-  const taxAmount = Math.round(taxableAmount * TAX_RATE * 100) / 100;
+  const taxAmount = Math.round(taxableAmount * taxRateDecimal * 100) / 100;
 
   const totalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
 
   const seq = await billingRepository.getNextInvoiceSequence(agencyId, month, year);
   const invoiceNumber = `INV-${year}${String(month).padStart(2, '0')}-${String(seq).padStart(4, '0')}`;
 
+  const now = new Date();
   const invoice = await billingRepository.createInvoiceWithItems({
     agencyId,
     customerId,
@@ -600,10 +612,12 @@ export async function generateCancellationInvoice(
     deliveryCharges,
     discountAmount,
     taxAmount,
+    taxRate,
     previousBalance: 0,
     totalAmount,
+    lockedAt: now,
     status: 'GENERATED',
-    generatedAt: new Date(),
+    generatedAt: now,
     items: invoiceItems,
   });
 
