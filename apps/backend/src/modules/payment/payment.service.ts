@@ -3,6 +3,7 @@ import * as paymentRepository from './payment.repository.js';
 import { logAudit } from '../../services/audit.service.js';
 import { createAndQueueNotification } from '../../services/notification.service.js';
 import { getPaymentGateway } from '../../services/payment-gateway.service.js';
+import { config } from '../../config/index.js';
 import type { RecordPaymentDto, ProcessRefundDto, InitOnlinePaymentDto, SaveGatewayConfigDto, PaymentResponse, PaymentRefundResponse, PaymentGatewayConfigResponse } from './payment.types.js';
 
 const MAX_RETRY_ATTEMPTS = 3;
@@ -171,7 +172,7 @@ export async function initOnlinePayment(
     orderId: order.orderId,
     amount: order.amount,
     currency: order.currency,
-    keyId: order.orderId.startsWith('mock_') ? undefined : undefined,
+    keyId: config.PAYMENT_KEY_ID,
     invoiceNumber: invoice.invoiceNumber,
   };
 }

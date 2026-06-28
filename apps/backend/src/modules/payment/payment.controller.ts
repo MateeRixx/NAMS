@@ -197,7 +197,8 @@ export async function handleWebhook(
     }
 
     const gateway = getPaymentGateway();
-    const isValid = gateway.verifyWebhook(req.body, signature, config.webhookSecret);
+    const rawBody = (req as unknown as Record<string, unknown>)['rawBody'] as string;
+    const isValid = gateway.verifyWebhook(rawBody, signature, config.webhookSecret);
 
     if (!isValid) {
       res.status(401).json({ success: false, error: { message: 'Invalid webhook signature' } });

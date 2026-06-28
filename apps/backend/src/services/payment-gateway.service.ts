@@ -38,7 +38,7 @@ export interface PaymentGateway {
   createOrder(input: CreateOrderInput): Promise<CreateOrderOutput>;
   verifyPayment(input: VerifyPaymentInput): boolean;
   processRefund(input: RefundInput): Promise<RefundOutput>;
-  verifyWebhook(payload: unknown, signature: string, secret: string): boolean;
+  verifyWebhook(rawBody: string, signature: string, secret: string): boolean;
 }
 
 class MockGateway implements PaymentGateway {
@@ -65,7 +65,7 @@ class MockGateway implements PaymentGateway {
     };
   }
 
-  verifyWebhook(_payload: unknown, _signature: string, _secret: string): boolean {
+  verifyWebhook(_rawBody: string, _signature: string, _secret: string): boolean {
     return true;
   }
 }
@@ -134,10 +134,10 @@ class RazorpayGateway implements PaymentGateway {
     };
   }
 
-  verifyWebhook(payload: unknown, signature: string, secret: string): boolean {
+  verifyWebhook(rawBody: string, signature: string, secret: string): boolean {
     const { createHmac } = require('crypto');
     const expectedSignature = createHmac('sha256', secret)
-      .update(JSON.stringify(payload))
+      .update(rawBody)
       .digest('hex');
     return expectedSignature === signature;
   }

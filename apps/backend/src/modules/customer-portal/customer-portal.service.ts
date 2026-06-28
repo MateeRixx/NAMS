@@ -917,6 +917,114 @@ export async function estimateCart(
   return { items: cartItems, subtotal, deliveryCharges, taxAmount, totalAmount };
 }
 
+export async function initInvoicePayment(
+  customerId: string,
+  agencyId: string,
+  invoiceId: string
+): Promise<{ orderId: string; amount: number; currency: string; keyId: string | undefined; invoiceNumber: string }> {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: invoiceId, customerId, agencyId },
+  });
+  if (!invoice) throw new NotFoundError('Invoice');
+  if (invoice.status === 'PAID') throw new ConflictError('Invoice is already paid');
+
+  const gateway = getPaymentGateway();
+  const order = await gateway.createOrder({
+    amount: Number(invoice.totalAmount.toString()),
+    currency: 'INR',
+    receipt: `inv_${invoice.invoiceNumber}`,
+    notes: { agencyId, invoiceId, customerId },
+  });
+
+  return {
+    orderId: order.orderId,
+    amount: order.amount,
+    currency: order.currency,
+    keyId: config.PAYMENT_KEY_ID,
+    invoiceNumber: invoice.invoiceNumber,
+  };
+}
+
+export async function verifyInvoicePayment(
+  customerId: string,
+  agencyId: string,
+  data: { invoiceId: string; orderId: string; paymentId: string; signature: string }
+): Promise<{ success: boolean; payment: { id: string; amount: number } }> {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: data.invoiceId, customerId, agencyId },
+  });
+  if (!invoice) throw new NotFoundError('Invoice');
+  if (invoice.status === 'PAID') throw new ConflictError('Invoice is already paid');
+
+  const gateway = getPaymentGateway();
+  const isValid = gateway.verifyPayment({
+    orderId: data.orderId,
+    paymentId: data.paymentId,
+    signature: data.signature,
+  });
+
+  if (!isValid) {
+    throw new ValidationError('Payment verification failed');
+  }
+
+  const now = new Date();
+  const seq = await getNextPaymentNumber(agencyId);
+  const amount = Number(invoice.totalAmount.toString());
+
+  const [payment] = await prisma.$transaction([
+    prisma.payment.create({
+      data: {
+        agencyId, customerId, invoiceId: invoice.id,
+        paymentNumber: seq,
+        amount,
+        method: 'ONLINE',
+        status: 'PAID',
+        transactionReference: data.paymentId,
+        gatewayOrderId: data.orderId,
+        gatewayPaymentId: data.paymentId,
+        paidAt: now,
+        attemptCount: 1,
+      },
+    }),
+    prisma.invoice.update({
+      where: { id: invoice.id },
+      data: { status: 'PAID' },
+    }),
+  ]);
+
+  logAudit({
+    agencyId,
+    userId: customerId,
+    entityType: 'Payment',
+    entityId: payment.id,
+    action: 'ONLINE_PAYMENT_VERIFIED',
+    newValue: { invoiceId: invoice.id, amount, paymentId: data.paymentId },
+  });
+
+  const customer = await prisma.customer.findFirst({ where: { id: customerId } });
+  if (customer?.email) {
+    createAndQueueNotification({
+      agencyId, customerId,
+      type: 'PAYMENT_RECEIVED',
+      channel: 'EMAIL',
+      title: 'Payment Received',
+      message: `Payment of \u20B9${amount} for invoice ${invoice.invoiceNumber} received successfully.`,
+      emailTo: customer.email,
+      emailSubject: `Payment Received - ${invoice.invoiceNumber}`,
+      templateData: {
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        invoiceNumber: invoice.invoiceNumber,
+        amount: String(amount),
+      },
+    }).catch(() => {});
+  }
+
+  return {
+    success: true,
+    payment: { id: payment.id, amount: Number(payment.amount.toString()) },
+  };
+}
+
 export async function checkoutCart(
   customerId: string,
   agencyId: string,

@@ -292,6 +292,29 @@ export async function updateProfile(
   }
 }
 
+export async function initInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id']!;
+    const result = await customerPortalService.initInvoicePayment(req.user!.userId, req.user!.agencyId, id);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function verifyInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = req.params['id']!;
+    const result = await customerPortalService.verifyInvoicePayment(req.user!.userId, req.user!.agencyId, {
+      invoiceId: id,
+      ...req.body as { orderId: string; paymentId: string; signature: string },
+    });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function listNotifications(
   req: Request,
   res: Response,
