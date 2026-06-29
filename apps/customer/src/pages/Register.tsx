@@ -1,46 +1,53 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
-  const { register, sendEmailOtp } = useAuth();
+  const { register, verifyEmail } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const initialEmail = (location.state as { email?: string })?.email ?? '';
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'form' | 'otp'>('form');
+  const [step, setStep] = useState<'form' | 'otp'>(initialEmail ? 'otp' : 'form');
+  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [sending, setSending] = useState(false);
-
-  async function handleSendOtp() {
-    if (!email.includes('@')) { setError('Enter a valid email address'); return; }
-    if (!firstName.trim()) { setError('Enter your first name'); return; }
-    if (!lastName.trim()) { setError('Enter your last name'); return; }
-    setSending(true);
-    setError('');
-    try {
-      await sendEmailOtp(email);
-      setStep('otp');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to send OTP');
-    } finally {
-      setSending(false);
-    }
-  }
+  const [loading, setLoading] = useState(false);
 
   async function handleRegister() {
-    if (otp.length !== 6) { setError('Enter a valid 6-digit OTP'); return; }
-    setSending(true);
+    if (!email.includes('@')) { setError('Enter a valid email address'); return; }
+    if (password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (!firstName.trim()) { setError('Enter your first name'); return; }
+    if (!lastName.trim()) { setError('Enter your last name'); return; }
+    setLoading(true);
     setError('');
+    setMessage('');
     try {
-      await register(email, otp, firstName.trim(), lastName.trim(), phone.trim() || undefined);
-      navigate('/', { replace: true });
+      const msg = await register(email, password, firstName.trim(), lastName.trim(), phone.trim() || undefined);
+      setMessage(msg);
+      setStep('otp');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
-      setSending(false);
+      setLoading(false);
+    }
+  }
+
+  async function handleVerify() {
+    if (otp.length !== 6) { setError('Enter a valid 6-digit OTP'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      await verifyEmail(email, otp);
+      navigate('/', { replace: true });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -48,7 +55,7 @@ export default function Register() {
     <div className="login-page">
       <div className="login-card">
         <h1>NewsFlow</h1>
-        <p className="subtitle">Create Account</p>
+        <p className="subtitle">{step === 'form' ? 'Create Account' : 'Verify Email'}</p>
 
         {step === 'form' ? (
           <>
@@ -57,6 +64,13 @@ export default function Register() {
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+            />
+            <input
+              type="password"
+              placeholder="Password (min 6 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              minLength={6}
             />
             <input
               type="text"
@@ -80,12 +94,14 @@ export default function Register() {
               maxLength={15}
             />
             {error && <p className="error">{error}</p>}
-            <button className="btn btn-primary btn-block" onClick={handleSendOtp} disabled={sending}>
-              {sending ? 'Sending...' : 'Send OTP'}
+            {message && <p className="success">{message}</p>}
+            <button className="btn btn-primary btn-block" onClick={handleRegister} disabled={loading}>
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </>
         ) : (
           <>
+            {message && <p className="success">{message}</p>}
             <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>OTP sent to {email}</p>
             <input
               type="text"
@@ -95,8 +111,8 @@ export default function Register() {
               maxLength={6}
             />
             {error && <p className="error">{error}</p>}
-            <button className="btn btn-primary btn-block" onClick={handleRegister} disabled={sending}>
-              {sending ? 'Creating account...' : 'Create Account'}
+            <button className="btn btn-primary btn-block" onClick={handleVerify} disabled={loading}>
+              {loading ? 'Verifying...' : 'Verify & Login'}
             </button>
             <button className="btn btn-block" onClick={() => { setStep('form'); setOtp(''); setError(''); }} style={{ marginTop: '0.5rem' }}>
               Change Details

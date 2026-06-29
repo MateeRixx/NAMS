@@ -62,14 +62,27 @@ export async function customerRegister(
   }
 }
 
-export async function customerVerifyOtp(
+export async function customerVerifyEmail(
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
   try {
     const body = req.body as { email: string; otp: string };
-    const result = await authService.customerVerifyOtp(body.email, body.otp);
+    const result = await authService.customerVerifyEmail(body);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function customerLogin(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await authService.customerLogin(req.body as never);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -78,6 +91,32 @@ export async function customerVerifyOtp(
 
 export function resetPassword(_req: Request, res: Response): void {
   res.json({ success: true, data: { message: 'Password reset email sent if account exists' } });
+}
+
+export async function customerForgotPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await authService.customerForgotPassword(req.body as never);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function customerResetPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const result = await authService.customerResetPassword(req.body as never);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function getProfile(req: Request, res: Response, next: NextFunction): Promise<void> {

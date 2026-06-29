@@ -19,9 +19,11 @@ export const loginSchema = z
   .object({
     email: z.string().email().optional(),
     phone: z.string().optional(),
-    firebaseToken: z.string().min(1),
+    password: z.string().optional(),
+    firebaseToken: z.string().optional(),
   })
-  .refine((data) => data.email ?? data.phone, { message: 'Either email or phone is required' });
+  .refine((data) => data.email ?? data.phone, { message: 'Either email or phone is required' })
+  .refine((data) => data.password ?? data.firebaseToken, { message: 'Either password or firebaseToken is required' });
 
 export const sendOtpSchema = z.object({
   phone: z.string().regex(/^\+?[1-9]\d{9,14}$/),
@@ -43,10 +45,25 @@ export const verifyEmailOtpSchema = z.object({
 
 export const customerRegisterSchema = z.object({
   email: z.string().email(),
-  otp: z.string().length(6),
+  password: z.string().min(6),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   phone: z.string().optional(),
+});
+
+export const customerLoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const customerForgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export const customerResetPasswordSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().length(6),
+  password: z.string().min(6),
 });
 
 export const resetPasswordSchema = z.object({

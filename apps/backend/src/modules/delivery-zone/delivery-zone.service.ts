@@ -60,3 +60,11 @@ export async function listDeliveryZones(agencyId: string): Promise<DeliveryZoneR
   const zones = await deliveryZoneRepository.listDeliveryZones(agencyId);
   return zones.map(toResponse);
 }
+
+export async function deleteDeliveryZone(id: string, agencyId: string): Promise<void> {
+  const zone = await deliveryZoneRepository.findDeliveryZoneById(id, agencyId);
+  if (!zone) {
+    throw new NotFoundError('DeliveryZone');
+  }
+  await deliveryZoneRepository.deleteDeliveryZone(id, agencyId);
+}

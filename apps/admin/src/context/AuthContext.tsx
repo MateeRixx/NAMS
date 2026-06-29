@@ -36,11 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [token]);
 
-  async function login(email: string, _password: string) {
-    const res = await client.post('/auth/login', {
-      email,
-      firebaseToken: 'dummy',
-    });
+  async function login(email: string, password: string) {
+    const res = await client.post('/auth/login', { email, password });
     const { token: newToken, user: userData } = res.data.data;
     localStorage.setItem('token', newToken);
     setToken(newToken);

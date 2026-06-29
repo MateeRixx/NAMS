@@ -12,6 +12,9 @@ import {
   verifyEmailOtpSchema,
   resetPasswordSchema,
   customerRegisterSchema,
+  customerLoginSchema,
+  customerForgotPasswordSchema,
+  customerResetPasswordSchema,
 } from './auth.validator.js';
 import * as authController from './auth.controller.js';
 
@@ -23,7 +26,10 @@ router.post('/otp/send', validate(sendOtpSchema), authController.sendOtp);
 router.post('/otp/send-email', validate(sendOtpEmailSchema), authController.sendEmailOtp);
 router.post('/otp/verify', validate(verifyOtpSchema), authController.verifyOtp);
 router.post('/customer/register', validate(customerRegisterSchema), authController.customerRegister);
-router.post('/customer/otp/verify', validate(verifyEmailOtpSchema), authController.customerVerifyOtp);
+router.post('/customer/verify-email', validate(verifyEmailOtpSchema), authController.customerVerifyEmail);
+router.post('/customer/login', validate(customerLoginSchema), authController.customerLogin);
+router.post('/customer/forgot-password', validate(customerForgotPasswordSchema), authController.customerForgotPassword);
+router.post('/customer/reset-password', validate(customerResetPasswordSchema), authController.customerResetPassword);
 router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 router.get('/me', authentication, authController.getProfile);
 router.get('/users', authentication, authController.listUsers);

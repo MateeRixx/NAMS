@@ -1,5 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
+import { useLanguage } from '../context/LanguageContext';
+import { SkeletonList } from '../components/Skeleton';
+import MsgBanner from '../components/MsgBanner';
 
 interface Invoice {
   id: string;
@@ -34,6 +38,8 @@ function loadRazorpayScript(): Promise<void> {
 }
 
 export default function Invoices() {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Invoice | null>(null);
@@ -61,15 +67,12 @@ export default function Invoices() {
 
       if (!keyId) {
         const verifyRes = await client.post(`/customer-portal/invoices/${invoice.id}/verify`, {
-          orderId,
-          paymentId: `mock_pay_${Date.now()}`,
-          signature: 'mock_signature',
+          orderId, paymentId: `mock_pay_${Date.now()}`, signature: 'mock_signature',
         });
         if (verifyRes.data.success) {
-          setMsg('Payment successful!');
+          setMsg(t().payment_successful);
           await load();
         }
-        setTimeout(() => setMsg(''), 3000);
         return;
       }
 
@@ -84,127 +87,113 @@ export default function Invoices() {
         order_id: orderId,
         handler: async function (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) {
           try {
-            const verifyRes = await client.post(`/customer-portal/invoices/${invoice.id}/verify`, {
+            await client.post(`/customer-portal/invoices/${invoice.id}/verify`, {
               orderId: response.razorpay_order_id,
               paymentId: response.razorpay_payment_id,
               signature: response.razorpay_signature,
             });
-            if (verifyRes.data.success) {
-              setMsg('Payment successful!');
-              await load();
-            }
+            setMsg(t().payment_successful);
+            await load();
           } catch {
-            setMsg('Payment verification failed');
+            setMsg(t().payment_verify_failed);
           }
-          setTimeout(() => setMsg(''), 3000);
         },
-        modal: {
-          ondismiss: function () {
-            setPayingId(null);
-          },
-        },
-        theme: { color: '#1a56db' },
+        modal: { ondismiss: () => setPayingId(null) },
+        theme: { color: '#3b82f6' },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : 'Payment failed');
-      setTimeout(() => setMsg(''), 3000);
-    } finally {
-      setPayingId(null);
+      setMsg(err instanceof Error ? err.message : t().payment_failed);
     }
-  }, []);
+  }, [t]);
 
-  if (loading) return <div className="loading">Loading...</div>;
+  if (loading) return <SkeletonList count={3} />;
+
+  const tr = t();
 
   return (
     <div>
       <div className="page-header">
-        <h1>My Invoices</h1>
+        <h1>{tr.invoices_title}</h1>
       </div>
 
-      {msg && (
-        <div className="card" style={{ background: msg.includes('successful') ? '#d1fae5' : '#fee2e2', marginBottom: '1rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>
-          {msg}
-        </div>
-      )}
+      {msg && <MsgBanner msg={msg} onDismiss={() => setMsg('')} />}
 
       {invoices.length === 0 ? (
         <div className="empty-state">
-          <p>No invoices yet</p>
-          <p className="hint">Invoices will appear here once generated</p>
+          <p>{tr.invoices_empty}</p>
+          <p className="hint">{tr.invoices_empty_hint}</p>
+          <button className="btn btn-primary" onClick={() => navigate('/subscriptions')}>{tr.invoices_view_subs}</button>
         </div>
       ) : (
-        <div>
+        <>
           {invoices.map((inv) => (
-            <div key={inv.id} className="card" style={{ cursor: 'pointer' }} onClick={() => setSelected(selected?.id === inv.id ? null : inv)}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={inv.id} className="card clickable" onClick={() => setSelected(selected?.id === inv.id ? null : inv)}>
+              <div className="flex justify-between items-center">
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{inv.invoiceNumber}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <div className="font-semibold text-sm">{inv.invoiceNumber}</div>
+                  <div className="text-xs text-muted mt-1">
                     {new Date(inv.billingYear, inv.billingMonth - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 600 }}>₹{Number(inv.totalAmount).toFixed(2)}</div>
+                <div className="text-right">
+                  <div className="font-bold">₹{Number(inv.totalAmount).toFixed(2)}</div>
                   <span className={`badge badge-${inv.status.toLowerCase()}`}>{inv.status}</span>
                 </div>
               </div>
 
               {selected?.id === inv.id && (
-                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border)' }}>
                   <div className="profile-field">
-                    <span className="label">Subtotal</span>
+                    <span className="label">{tr.invoices_label_subtotal}</span>
                     <span className="value">₹{Number(inv.subtotal).toFixed(2)}</span>
                   </div>
                   <div className="profile-field">
-                    <span className="label">Delivery Charges</span>
+                    <span className="label">{tr.invoices_label_delivery}</span>
                     <span className="value">₹{Number(inv.deliveryCharges).toFixed(2)}</span>
                   </div>
                   {Number(inv.discountAmount) > 0 && (
                     <div className="profile-field">
-                      <span className="label">Discount</span>
+                      <span className="label">{tr.invoices_label_discount}</span>
                       <span className="value" style={{ color: 'var(--success)' }}>-₹{Number(inv.discountAmount).toFixed(2)}</span>
                     </div>
                   )}
                   <div className="profile-field">
-                    <span className="label">Tax</span>
+                    <span className="label">{tr.invoices_label_tax}</span>
                     <span className="value">₹{Number(inv.taxAmount).toFixed(2)}</span>
                   </div>
                   {Number(inv.previousBalance) > 0 && (
                     <div className="profile-field">
-                      <span className="label">Previous Balance</span>
+                      <span className="label">{tr.invoices_label_previous}</span>
                       <span className="value">₹{Number(inv.previousBalance).toFixed(2)}</span>
                     </div>
                   )}
                   <div className="profile-field">
-                    <span className="label">Total</span>
-                    <span className="value" style={{ fontWeight: 700 }}>₹{Number(inv.totalAmount).toFixed(2)}</span>
+                    <span className="label font-bold">{tr.invoices_label_total}</span>
+                    <span className="value font-bold">₹{Number(inv.totalAmount).toFixed(2)}</span>
                   </div>
-                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn btn-sm btn-primary" onClick={(e) => { e.stopPropagation(); downloadPdf(inv.id); }}>
-                      Download PDF
+                  <div className="action-row mt-3">
+                    <button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); downloadPdf(inv.id); }}>
+                      {tr.invoices_download}
                     </button>
                     {inv.status !== 'PAID' && (
-                      <button
-                        className="btn btn-sm btn-success"
+                      <button className="btn btn-sm btn-primary"
                         onClick={(e) => { e.stopPropagation(); handlePay(inv); }}
-                        disabled={payingId === inv.id}
-                        style={payingId === inv.id ? { opacity: 0.7 } : {}}
-                      >
-                        {payingId === inv.id ? 'Processing...' : 'Pay Now'}
+                        disabled={payingId === inv.id}>
+                        {payingId === inv.id ? tr.invoices_processing : tr.invoices_pay}
                       </button>
                     )}
                     {inv.status === 'PAID' && (
-                      <span className="badge badge-paid" style={{ background: 'var(--success)' }}>Paid</span>
+                      <span className="badge badge-paid">{tr.invoices_paid}</span>
                     )}
                   </div>
                 </div>
               )}
             </div>
           ))}
-        </div>
+        </>
       )}
     </div>
   );

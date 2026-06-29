@@ -5,6 +5,14 @@ export const createDistributionRequestSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
   requestedQuantity: z.number().int().positive(),
+  zones: z
+    .array(
+      z.object({
+        deliveryZoneId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .optional(),
 });
 
 export const updateDistributionRequestSchema = z.object({

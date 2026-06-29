@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -16,44 +17,58 @@ async function main() {
     });
   }
 
+  const passwordHash = await bcrypt.hash('admin123', 10);
+
   const adminEmail = 'admin@newsflow.local';
   const existingAdmin = await prisma.user.findFirst({ where: { email: adminEmail } });
-  if (!existingAdmin) {
-    const adminUser = await prisma.user.create({
+  if (existingAdmin) {
+    if (!existingAdmin.password) {
+      await prisma.user.update({ where: { id: existingAdmin.id }, data: { password: passwordHash } });
+      console.log('Updated admin password');
+    }
+  } else {
+    await prisma.user.create({
       data: {
         agencyId: agency.id,
         email: adminEmail,
         firebaseUid: 'dev-firebase-uid',
+        password: passwordHash,
         firstName: 'Dev',
         lastName: 'Admin',
         role: 'AGENCY_ADMIN',
         isActive: true,
       },
     });
-    console.log(`Created admin user: ${adminUser.id}`);
+    console.log('Created admin user');
   }
 
   const staffEmail = 'staff@newsflow.local';
   const existingStaff = await prisma.user.findFirst({ where: { email: staffEmail } });
-  if (!existingStaff) {
-    const staffUser = await prisma.user.create({
+  if (existingStaff) {
+    if (!existingStaff.password) {
+      await prisma.user.update({ where: { id: existingStaff.id }, data: { password: passwordHash } });
+      console.log('Updated staff password');
+    }
+  } else {
+    await prisma.user.create({
       data: {
         agencyId: agency.id,
         email: staffEmail,
         firebaseUid: 'dev-staff-uid',
+        password: passwordHash,
         firstName: 'Dev',
         lastName: 'Staff',
         role: 'AGENCY_STAFF',
         isActive: true,
       },
     });
-    console.log(`Created staff user: ${staffUser.id}`);
+    console.log('Created staff user');
   }
 
   const customerPhone = '+919999999998';
   const existingCustomer = await prisma.customer.findFirst({ where: { phone: customerPhone, deletedAt: null } });
   if (!existingCustomer) {
-    const testCustomer = await prisma.customer.create({
+    await prisma.customer.create({
       data: {
         agencyId: agency.id,
         customerCode: 'CUST-0001',
@@ -64,7 +79,7 @@ async function main() {
         status: 'ACTIVE',
       },
     });
-    console.log(`Created test customer: ${testCustomer.id}`);
+    console.log('Created test customer');
   }
 
   console.log('Seed complete.');

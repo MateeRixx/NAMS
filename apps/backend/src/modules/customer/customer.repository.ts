@@ -137,6 +137,10 @@ export async function getNextCustomerCode(agencyId: string): Promise<string> {
     return 'CUST-0001';
   }
 
-  const num = parseInt(lastCustomer.customerCode.replace('CUST-', ''), 10);
+  const numStr = lastCustomer.customerCode.replace(/^CUST[-]?/, '');
+  const num = parseInt(numStr, 10);
+  if (isNaN(num)) {
+    return 'CUST-0001';
+  }
   return `CUST-${String(num + 1).padStart(4, '0')}`;
 }

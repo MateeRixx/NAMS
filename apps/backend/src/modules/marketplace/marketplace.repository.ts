@@ -6,13 +6,33 @@ export async function createDistributionRequest(data: {
   title: string;
   description?: string;
   requestedQuantity: number;
+  zones?: { deliveryZoneId: string; quantity: number }[];
 }) {
-  return prisma.distributionRequest.create({ data });
+  return prisma.distributionRequest.create({
+    data: {
+      agencyId: data.agencyId,
+      customerId: data.customerId,
+      title: data.title,
+      description: data.description ?? null,
+      requestedQuantity: data.requestedQuantity,
+      status: 'PENDING',
+      zones: data.zones
+        ? {
+            create: data.zones.map((z) => ({
+              deliveryZoneId: z.deliveryZoneId,
+              quantity: z.quantity,
+            })),
+          }
+        : undefined,
+    },
+    include: { zones: { include: { deliveryZone: { select: { id: true, name: true } } } } },
+  });
 }
 
 export async function findDistributionRequestById(id: string, agencyId: string) {
   return prisma.distributionRequest.findFirst({
     where: { id, agencyId },
+    include: { zones: { include: { deliveryZone: { select: { id: true, name: true } } } } },
   });
 }
 
@@ -20,6 +40,7 @@ export async function listDistributionRequests(agencyId: string) {
   return prisma.distributionRequest.findMany({
     where: { agencyId },
     orderBy: { createdAt: 'desc' },
+    include: { zones: { include: { deliveryZone: { select: { id: true, name: true } } } } },
   });
 }
 
@@ -31,6 +52,7 @@ export async function updateDistributionRequest(
   return prisma.distributionRequest.update({
     where: { id },
     data: data as never,
+    include: { zones: { include: { deliveryZone: { select: { id: true, name: true } } } } },
   });
 }
 

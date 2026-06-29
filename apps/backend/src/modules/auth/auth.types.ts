@@ -13,7 +13,8 @@ export interface RegisterDto {
 export interface LoginDto {
   email?: string;
   phone?: string;
-  firebaseToken: string;
+  password?: string;
+  firebaseToken?: string;
 }
 
 export interface AuthResponse {
@@ -53,10 +54,30 @@ export interface ResetPasswordDto {
 
 export interface CustomerRegisterDto {
   email: string;
-  otp: string;
+  password: string;
   firstName: string;
   lastName: string;
   phone?: string;
+}
+
+export interface CustomerVerifyEmailDto {
+  email: string;
+  otp: string;
+}
+
+export interface CustomerLoginDto {
+  email: string;
+  password: string;
+}
+
+export interface CustomerForgotPasswordDto {
+  email: string;
+}
+
+export interface CustomerResetPasswordDto {
+  email: string;
+  otp: string;
+  password: string;
 }
 
 export interface CustomerAuthResponse {

@@ -14,6 +14,7 @@ router.patch('/subscriptions/:id/cancel', customerPortalController.cancelSubscri
 router.patch('/subscriptions/:id/pause', customerPortalController.pauseSubscription);
 router.patch('/subscriptions/:id/resume', customerPortalController.resumeSubscription);
 router.get('/invoices', customerPortalController.listInvoices);
+router.post('/invoices/generate-current', customerPortalController.generateCurrentInvoice);
 router.get('/invoices/:id', customerPortalController.getInvoice);
 router.get('/invoices/:id/pdf', customerPortalController.downloadInvoicePdf);
 router.post('/invoices/:id/pay', customerPortalController.initInvoicePayment);
@@ -35,6 +36,7 @@ router.post('/cart/checkout', customerPortalController.checkoutCart);
 router.get('/notifications', customerPortalController.listNotifications);
 router.get('/notifications/unread-count', customerPortalController.getUnreadNotificationCount);
 
+router.get('/delivery-zones', customerPortalController.listDeliveryZones);
 router.get('/distribution-requests', customerPortalController.listMyDistributionRequests);
 router.post('/distribution-requests', customerPortalController.createMyDistributionRequest);
 router.get('/article-requests', customerPortalController.listMyArticleRequests);

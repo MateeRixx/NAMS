@@ -37,7 +37,7 @@ export default function Notifications() {
       ]);
       setNotifications(notifRes.data.data.notifications);
       setTotal(notifRes.data.data.total);
-      setCustomers(custRes.data.data);
+      setCustomers(Array.isArray(custRes.data.data) ? custRes.data.data : custRes.data.data.items);
     } finally {
       setLoading(false);
     }

@@ -39,3 +39,9 @@ export async function listDeliveryZones(agencyId: string) {
     orderBy: { name: 'asc' },
   });
 }
+
+export async function deleteDeliveryZone(id: string, agencyId: string) {
+  return prisma.deliveryZone.delete({
+    where: { id },
+  });
+}

@@ -40,7 +40,7 @@ export default function Billing() {
         client.get('/customers'),
       ]);
       setInvoices(invRes.data.data);
-      setCustomers(custRes.data.data);
+      setCustomers(Array.isArray(custRes.data.data) ? custRes.data.data : custRes.data.data.items);
     } finally {
       setLoading(false);
     }

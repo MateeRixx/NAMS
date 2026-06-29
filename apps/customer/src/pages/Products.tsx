@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import client from '../api/client';
+import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
+import { SkeletonList } from '../components/Skeleton';
 
 interface Product {
   id: string;
@@ -7,14 +11,17 @@ interface Product {
   type: string;
   basePrice: number;
   description: string | null;
+  estimatedMonthlyCost: number;
+  dayRates: { dayOfWeek: number; price: number }[];
 }
 
 export default function Products() {
+  const { t } = useLanguage();
+  const { items, addItem, removeItem, itemCount } = useCart();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [subscriptions, setSubscriptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [msg, setMsg] = useState('');
 
   async function load() {
     setLoading(true);
@@ -24,7 +31,7 @@ export default function Products() {
         client.get('/customer-portal/subscriptions'),
       ]);
       setProducts(prodRes.data.data);
-      setSubscriptions(subRes.data.data.map((s: { productId: string; status: string }) => s.productId));
+      setSubscriptions(subRes.data.data.map((s: { productId: string }) => s.productId));
     } finally {
       setLoading(false);
     }
@@ -32,76 +39,74 @@ export default function Products() {
 
   useEffect(() => { load(); }, []);
 
-  async function handleSubscribe(productId: string) {
-    setSubscribing(productId);
-    setMsg('');
-    try {
-      await client.post('/customer-portal/subscriptions', { productId });
-      setMsg('Subscribed successfully!');
-      await load();
-      setTimeout(() => setMsg(''), 3000);
-    } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : 'Failed to subscribe');
-    } finally {
-      setSubscribing(null);
-    }
-  }
+  if (loading) return <SkeletonList count={3} />;
 
-  if (loading) return <div className="loading">Loading...</div>;
+  const tr = t();
 
   return (
     <div>
       <div className="page-header">
-        <h1>Available Products</h1>
+        <h1>{tr.products_title}</h1>
       </div>
-
-      {msg && (
-        <div className="card" style={{ background: msg.includes('success') ? '#d1fae5' : '#fee2e2', marginBottom: '1rem', fontSize: '0.9rem' }}>
-          {msg}
-        </div>
-      )}
 
       {products.length === 0 ? (
         <div className="empty-state">
-          <p>No products available yet</p>
-          <p className="hint">Contact your agency to add products</p>
+          <p>{tr.products_empty}</p>
+          <p className="hint">{tr.products_empty_hint}</p>
         </div>
       ) : (
-        <div>
+        <>
           {products.map((p) => {
             const isSubscribed = subscriptions.includes(p.id);
+            const inCart = items.some((i) => i.productId === p.id);
+
             return (
               <div key={p.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div className="flex justify-between items-start">
                   <div>
-                    <h3 style={{ margin: 0 }}>{p.name}</h3>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                    <div className="card-title">{p.name}</div>
+                    <div className="card-subtitle">
                       {p.type.replace(/_/g, ' ')}
                       {p.description && <> &middot; {p.description}</>}
-                    </p>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>₹{p.basePrice.toFixed(2)}</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>per day</div>
+                  <div className="card-price">
+                    ₹{p.estimatedMonthlyCost.toFixed(2)}<span className="price-unit">{tr.subs_month}</span>
                   </div>
                 </div>
-                <div style={{ marginTop: '0.75rem' }}>
+
+                {p.dayRates.length > 0 && (
+                  <div className="text-xs text-muted mt-2">
+                    Day-specific pricing: {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => {
+                      const dr = p.dayRates.find((r) => r.dayOfWeek === i);
+                      return dr ? `${d} ₹${dr.price.toFixed(2)}` : null;
+                    }).filter(Boolean).join(', ')}
+                  </div>
+                )}
+
+                <div className="mt-3">
                   {isSubscribed ? (
-                    <span className="badge badge-active">Subscribed</span>
+                    <span className="badge badge-active">{tr.subscribed}</span>
                   ) : (
                     <button
-                      className="btn btn-primary btn-block"
-                      onClick={() => handleSubscribe(p.id)}
-                      disabled={subscribing === p.id}
+                      className={`btn ${inCart ? 'btn-block' : 'btn-primary btn-block'}`}
+                      onClick={() => inCart ? removeItem(p.id) : addItem({ productId: p.id, productName: p.name, basePrice: p.basePrice, estimatedMonthlyCost: p.estimatedMonthlyCost })}
                     >
-                      {subscribing === p.id ? 'Subscribing...' : 'Subscribe'}
+                      {inCart ? tr.remove_from_cart : tr.add_to_cart}
                     </button>
                   )}
                 </div>
               </div>
             );
           })}
-        </div>
+
+          {itemCount > 0 && (
+            <button className="floating-cart-btn" onClick={() => navigate('/cart')}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              {tr.nav_cart} ({itemCount})
+            </button>
+          )}
+        </>
       )}
     </div>
   );

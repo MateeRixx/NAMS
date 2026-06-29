@@ -39,6 +39,7 @@ function toDistributionResponse(d: {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  zones?: { id: string; deliveryZoneId: string; deliveryZone: { id: string; name: string }; quantity: number }[];
 }): DistributionRequestResponse {
   return {
     id: d.id,
@@ -51,6 +52,12 @@ function toDistributionResponse(d: {
     status: d.status,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
+    zones: d.zones?.map((z) => ({
+      id: z.id,
+      deliveryZoneId: z.deliveryZoneId,
+      deliveryZone: { id: z.deliveryZone.id, name: z.deliveryZone.name },
+      quantity: z.quantity,
+    })),
   };
 }
 

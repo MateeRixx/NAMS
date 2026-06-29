@@ -54,6 +54,10 @@ export default function Customers() {
   });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [editForm, setEditForm] = useState({ firstName: '', lastName: '', phone: '', email: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     client.get('/delivery-zones').then((res) => setZones(res.data.data)).catch(() => {});
@@ -109,6 +113,57 @@ export default function Customers() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function openEdit(c: Customer) {
+    setEditingCustomer(c);
+    setEditForm({ firstName: c.firstName, lastName: c.lastName, phone: c.phone, email: c.email ?? '' });
+  }
+
+  async function handleEditSave() {
+    if (!editingCustomer) return;
+    if (!editForm.firstName || !editForm.lastName || !editForm.phone) {
+      setFormError('First name, last name and phone are required');
+      return;
+    }
+    setSavingEdit(true);
+    setFormError('');
+    try {
+      await client.patch(`/customers/${editingCustomer.id}`, {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        phone: editForm.phone,
+        email: editForm.email || undefined,
+      });
+      setEditingCustomer(null);
+      await refreshList();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to update customer');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    setSavingEdit(true);
+    setFormError('');
+    try {
+      await client.delete(`/customers/${id}`);
+      setDeletingId(null);
+      if (selected === id) setSelected(null);
+      await refreshList();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Failed to delete customer');
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
+  async function refreshList() {
+    const params: Record<string, string | number> = { limit: 50 };
+    if (search) params.search = search;
+    const res = await client.get('/customers', { params });
+    setCustomers(res.data.data.items);
   }
 
   async function selectCustomer(id: string) {
@@ -296,6 +351,11 @@ export default function Customers() {
                               </table>
                             )}
                           </div>
+
+                          <div className="detail-section" style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button className="btn btn-primary btn-sm" onClick={() => openEdit(c)}>Edit</button>
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeletingId(c.id)}>Delete</button>
+                          </div>
                         </div>
                       )}
                     </td>
@@ -305,6 +365,54 @@ export default function Customers() {
             ))}
           </tbody>
         </table>
+      )}
+
+      {editingCustomer && (
+        <div className="modal-overlay" onClick={() => setEditingCustomer(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Edit Customer — {editingCustomer.customerCode}</h3>
+            <div className="form-row">
+              <div className="input-group">
+                <label>First Name *</label>
+                <input className="input" value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label>Last Name *</label>
+                <input className="input" value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} />
+              </div>
+            </div>
+            <div className="input-group">
+              <label>Phone *</label>
+              <input className="input" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>Email</label>
+              <input className="input" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="Optional" />
+            </div>
+            {formError && <p className="error-text">{formError}</p>}
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setEditingCustomer(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleEditSave} disabled={savingEdit}>
+                {savingEdit ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deletingId && (
+        <div className="modal-overlay" onClick={() => setDeletingId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Customer</h3>
+            <p>This will deactivate the customer and their subscriptions. This cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setDeletingId(null)}>Keep</button>
+              <button className="btn btn-danger" onClick={() => handleDelete(deletingId)} disabled={savingEdit}>
+                {savingEdit ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

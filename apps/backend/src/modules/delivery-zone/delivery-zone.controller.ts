@@ -61,3 +61,17 @@ export async function listDeliveryZones(
     next(error);
   }
 }
+
+export async function deleteDeliveryZone(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const id = req.params['id']!;
+    await deliveryZoneService.deleteDeliveryZone(id, req.user!.agencyId);
+    res.json({ success: true, data: { message: 'Delivery zone deleted' } });
+  } catch (error) {
+    next(error);
+  }
+}

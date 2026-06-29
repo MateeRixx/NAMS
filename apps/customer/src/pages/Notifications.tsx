@@ -20,8 +20,14 @@ export default function Notifications() {
   useEffect(() => {
     client.get('/customer-portal/notifications')
       .then((res) => {
-        setNotifications(res.data.data.notifications);
-        setTotal(res.data.data.total);
+        const d = res.data.data;
+        if (Array.isArray(d)) {
+          setNotifications(d);
+          setTotal(d.length);
+        } else {
+          setNotifications(d.notifications ?? []);
+          setTotal(d.total ?? 0);
+        }
       })
       .finally(() => setLoading(false));
   }, []);

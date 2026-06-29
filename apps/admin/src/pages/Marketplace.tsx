@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 
+interface DistZone {
+  id: string;
+  deliveryZoneId: string;
+  deliveryZone: { id: string; name: string };
+  quantity: number;
+}
+
 interface DistributionRequest {
   id: string;
   customerId: string;
@@ -10,6 +17,7 @@ interface DistributionRequest {
   quotedPrice: number | null;
   status: string;
   createdAt: string;
+  zones?: DistZone[];
 }
 
 interface ArticleRequest {
@@ -99,6 +107,7 @@ export default function Marketplace() {
             <tr>
               <th>Title</th>
               <th>Quantity</th>
+              <th>Areas</th>
               <th>Quoted Price</th>
               <th>Status</th>
               <th>Created</th>
@@ -111,6 +120,11 @@ export default function Marketplace() {
                 <tr key={d.id}>
                   <td>{d.title}</td>
                   <td>{d.requestedQuantity}</td>
+                  <td>
+                    {d.zones && d.zones.length > 0
+                      ? d.zones.map((z) => `${z.deliveryZone.name}: ${z.quantity}`).join(', ')
+                      : '-'}
+                  </td>
                   <td>{d.quotedPrice != null ? `₹${d.quotedPrice}` : '-'}</td>
                   <td>
                     <span className="badge" style={{ backgroundColor: distStatusColor[d.status] || '#6b7280' }}>
@@ -126,7 +140,7 @@ export default function Marketplace() {
                 </tr>
                 {selectedDist === d.id && (
                   <tr key={`${d.id}-actions`}>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {d.status === 'PENDING' && (
                           <>
@@ -164,7 +178,7 @@ export default function Marketplace() {
             ))}
             {distRequests.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   No distribution requests yet
                 </td>
               </tr>

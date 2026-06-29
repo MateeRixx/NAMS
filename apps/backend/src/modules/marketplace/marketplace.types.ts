@@ -1,8 +1,14 @@
+export interface ZoneQuantity {
+  deliveryZoneId: string;
+  quantity: number;
+}
+
 export interface CreateDistributionRequestDto {
   customerId: string;
   title: string;
   description?: string;
   requestedQuantity: number;
+  zones?: ZoneQuantity[];
 }
 
 export interface UpdateDistributionRequestDto {
@@ -21,6 +27,7 @@ export interface DistributionRequestResponse {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+  zones?: { id: string; deliveryZoneId: string; deliveryZone: { id: string; name: string }; quantity: number }[];
 }
 
 export interface CreateArticleRequestDto {

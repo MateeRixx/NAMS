@@ -139,6 +139,7 @@ model User {
   email      String?
   phone      String?
   firebaseUid String  @unique
+  password   String?
   firstName  String
   lastName   String
   role       UserRole @default(AGENCY_STAFF)
@@ -159,9 +160,11 @@ model Customer {
   customerCode String
   firstName    String
   lastName     String
-  phone        String?
-  email        String?
-  status       String   @default("ACTIVE")
+  phone           String?
+  email           String?
+  password        String?
+  emailVerifiedAt DateTime?
+  status          String   @default("ACTIVE")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   deletedAt    DateTime?
@@ -216,8 +219,9 @@ model DeliveryZone {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  agency    Agency    @relation(fields: [agencyId], references: [id])
+  agency    Agency                    @relation(fields: [agencyId], references: [id])
   addresses Address[]
+  distributionRequests DistributionRequestZone[]
 
   @@index([agencyId])
   @@index([name])
@@ -455,10 +459,24 @@ model DistributionRequest {
 
   agency   Agency   @relation(fields: [agencyId], references: [id])
   customer Customer @relation(fields: [customerId], references: [id])
+  zones    DistributionRequestZone[]
 
   @@index([agencyId])
   @@index([customerId])
   @@index([status])
+}
+
+model DistributionRequestZone {
+  id                      String              @id @default(uuid())
+  distributionRequestId   String
+  deliveryZoneId          String
+  quantity                Int
+
+  distributionRequest DistributionRequest @relation(fields: [distributionRequestId], references: [id], onDelete: Cascade)
+  deliveryZone        DeliveryZone        @relation(fields: [deliveryZoneId], references: [id])
+
+  @@index([distributionRequestId])
+  @@index([deliveryZoneId])
 }
 
 model ArticleRequest {

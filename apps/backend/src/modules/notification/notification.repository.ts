@@ -32,3 +32,15 @@ export async function countUnread(agencyId: string, customerId?: string): Promis
   if (customerId) where['customerId'] = customerId;
   return prisma.notification.count({ where: where as never });
 }
+
+export async function createNotification(data: {
+  agencyId: string;
+  customerId?: string;
+  type: string;
+  channel: string;
+  title: string;
+  message: string;
+  status?: string;
+}) {
+  return prisma.notification.create({ data: data as never });
+}

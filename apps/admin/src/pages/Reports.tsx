@@ -62,17 +62,26 @@ export default function Reports() {
   const [growth, setGrowth] = useState<GrowthEntry[]>([]);
   const [collections, setCollections] = useState<CollectionReport | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filterYear, setFilterYear] = useState<number>(new Date().getFullYear());
+  const [filterMonth, setFilterMonth] = useState<number>(0);
+
+  function loadRevenue() {
+    const params: Record<string, string | number> = {};
+    if (filterYear) params.year = filterYear;
+    if (filterMonth) params.month = filterMonth;
+    client.get('/reports/revenue', { params }).then((r) => setRevenue(r.data.data));
+  }
 
   function loadAll() {
     setLoading(true);
     Promise.all([
-      client.get('/reports/revenue'),
+      filterYear || filterMonth ? loadRevenue() : client.get('/reports/revenue'),
       client.get('/reports/products'),
       client.get('/reports/complaints'),
       client.get('/reports/growth'),
       client.get('/reports/collections'),
     ]).then(([r, p, c, g, col]) => {
-      setRevenue(r.data.data);
+      if (r) setRevenue(r.data.data);
       setProducts(p.data.data);
       setComplaints(c.data.data);
       setGrowth(g.data.data);
@@ -81,6 +90,10 @@ export default function Reports() {
   }
 
   useEffect(() => { loadAll(); }, []);
+
+  useEffect(() => {
+    if (tab === 'revenue') loadRevenue();
+  }, [filterYear, filterMonth]);
 
   if (loading) return <div className="loading">Loading...</div>;
 
@@ -92,23 +105,45 @@ export default function Reports() {
     { key: 'collections', label: 'Collections' },
   ];
 
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
   return (
     <div>
-      <h1>Reports</h1>
-      <div className="tabs" style={{ marginBottom: '1rem' }}>
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={`btn ${tab === t.key ? 'btn-primary' : 'btn-sm'}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div className="page-header">
+        <h1>Reports</h1>
+        <div className="tabs" style={{ marginBottom: '1rem' }}>
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              className={`btn ${tab === t.key ? 'btn-primary' : 'btn-sm'}`}
+              onClick={() => setTab(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {tab === 'revenue' && revenue && (
         <div>
+          <div className="form-row" style={{ marginBottom: '1rem', maxWidth: '400px' }}>
+            <div className="input-group">
+              <label>Year</label>
+              <select className="select" value={filterYear} onChange={(e) => setFilterYear(Number(e.target.value))}>
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+            <div className="input-group">
+              <label>Month</label>
+              <select className="select" value={filterMonth} onChange={(e) => setFilterMonth(Number(e.target.value))}>
+                <option value={0}>All Months</option>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>{new Date(2000, m - 1).toLocaleString('default', { month: 'long' })}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="card-grid" style={{ marginBottom: '1rem' }}>
             <div className="stat-card" style={{ borderTopColor: '#10b981' }}>
               <div className="stat-label">Total Revenue</div>

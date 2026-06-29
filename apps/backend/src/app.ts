@@ -29,7 +29,7 @@ const app: Express = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL, 'http://localhost:3002'],
+    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL, 'http://localhost:3002', 'http://localhost:3003'],
     credentials: true,
   })
 );

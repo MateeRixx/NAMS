@@ -20,7 +20,7 @@ const emptyForm = {
 };
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
 
   // Profile
   const [editing, setEditing] = useState(false);
@@ -49,12 +49,7 @@ export default function Profile() {
     try {
       await client.patch('/customer-portal/profile', { firstName, lastName, email: email || null });
       setMsg('Profile updated'); setEditing(false);
-      const u = localStorage.getItem('customer_user');
-      if (u) {
-        const p = JSON.parse(u);
-        p.firstName = firstName; p.lastName = lastName; p.email = email || null;
-        localStorage.setItem('customer_user', JSON.stringify(p));
-      }
+      updateUser({ firstName, lastName, email: email || null });
     } catch { setMsg('Failed to update profile'); }
     finally { setSaving(false); }
   }
@@ -72,8 +67,6 @@ export default function Profile() {
         setAddresses((prev) => [res.data.data, ...prev]);
       }
       resetForm();
-      const res = await client.get('/customer-portal/addresses');
-      setAddresses(res.data.data);
     } catch { setAddrMsg('Failed to save address'); }
   }
 

@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 
+interface DeliveryZone { id: string; name: string; }
+
+interface DistZone {
+  id: string;
+  deliveryZoneId: string;
+  deliveryZone: { id: string; name: string };
+  quantity: number;
+}
+
 interface DistributionRequest {
   id: string;
   title: string;
@@ -9,6 +18,7 @@ interface DistributionRequest {
   quotedPrice: number | null;
   status: string;
   createdAt: string;
+  zones?: DistZone[];
 }
 
 interface ArticleRequest {
@@ -23,11 +33,7 @@ interface ArticleRequest {
   product?: { name: string } | null;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  type: string;
-}
+interface Product { id: string; name: string; type: string; }
 
 const distStatusColor: Record<string, string> = {
   PENDING: '#f59e0b',
@@ -51,12 +57,13 @@ export default function Marketplace() {
   const [distRequests, setDistRequests] = useState<DistributionRequest[]>([]);
   const [articleRequests, setArticleRequests] = useState<ArticleRequest[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showDistForm, setShowDistForm] = useState(false);
   const [distTitle, setDistTitle] = useState('');
   const [distDescription, setDistDescription] = useState('');
-  const [distQuantity, setDistQuantity] = useState(100);
+  const [zoneQty, setZoneQty] = useState<Record<string, number>>({});
   const [distSubmitting, setDistSubmitting] = useState(false);
   const [distError, setDistError] = useState('');
 
@@ -68,17 +75,21 @@ export default function Marketplace() {
   const [articleSubmitting, setArticleSubmitting] = useState(false);
   const [articleError, setArticleError] = useState('');
 
+  const totalQuantity = Object.values(zoneQty).reduce((s, v) => s + (v || 0), 0);
+
   async function load() {
     setLoading(true);
     try {
-      const [distRes, articleRes, prodRes] = await Promise.all([
+      const [distRes, articleRes, prodRes, zoneRes] = await Promise.all([
         client.get('/customer-portal/distribution-requests'),
         client.get('/customer-portal/article-requests'),
         client.get('/customer-portal/products'),
+        client.get('/customer-portal/delivery-zones'),
       ]);
       setDistRequests(distRes.data.data);
       setArticleRequests(articleRes.data.data);
       setProducts(prodRes.data.data);
+      setZones(zoneRes.data.data);
     } finally {
       setLoading(false);
     }
@@ -86,20 +97,30 @@ export default function Marketplace() {
 
   useEffect(() => { load(); }, []);
 
+  function resetDistForm() {
+    setShowDistForm(false);
+    setDistTitle('');
+    setDistDescription('');
+    setZoneQty({});
+    setDistError('');
+  }
+
   async function handleCreateDist() {
-    if (!distTitle || !distQuantity) { setDistError('Title and quantity are required'); return; }
+    if (!distTitle) { setDistError('Title is required'); return; }
+    if (totalQuantity === 0) { setDistError('Enter quantity for at least one area'); return; }
     setDistSubmitting(true);
     setDistError('');
     try {
+      const zonesArr = Object.entries(zoneQty)
+        .filter(([, q]) => q > 0)
+        .map(([deliveryZoneId, quantity]) => ({ deliveryZoneId, quantity }));
       await client.post('/customer-portal/distribution-requests', {
         title: distTitle,
         description: distDescription || undefined,
-        requestedQuantity: distQuantity,
+        requestedQuantity: totalQuantity,
+        zones: zonesArr,
       });
-      setShowDistForm(false);
-      setDistTitle('');
-      setDistDescription('');
-      setDistQuantity(100);
+      resetDistForm();
       await load();
     } catch (err: unknown) {
       setDistError(err instanceof Error ? err.message : 'Failed to submit request');
@@ -141,33 +162,23 @@ export default function Marketplace() {
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button
-          className={`btn ${tab === 'distribution' ? 'btn-primary' : 'btn-sm'}`}
-          onClick={() => setTab('distribution')}
-        >
+        <button className={`btn ${tab === 'distribution' ? 'btn-primary' : 'btn-sm'}`} onClick={() => setTab('distribution')}>
           Pamphlet Distribution
         </button>
-        <button
-          className={`btn ${tab === 'article' ? 'btn-primary' : 'btn-sm'}`}
-          onClick={() => setTab('article')}
-        >
+        <button className={`btn ${tab === 'article' ? 'btn-primary' : 'btn-sm'}`} onClick={() => setTab('article')}>
           Article Publication
         </button>
       </div>
 
       {tab === 'distribution' && (
         <>
-          <button
-            className="btn btn-sm btn-primary"
-            style={{ marginBottom: '1rem' }}
-            onClick={() => setShowDistForm(!showDistForm)}
-          >
+          <button className="btn btn-sm btn-primary" style={{ marginBottom: '1rem' }} onClick={() => setShowDistForm(!showDistForm)}>
             {showDistForm ? 'Cancel' : 'Request Pamphlet Distribution'}
           </button>
 
           {showDistForm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <h3>New Distribution Request</h3>
+              <h3 style={{ marginBottom: '0.75rem' }}>New Distribution Request</h3>
               <div className="input-group">
                 <label>Title</label>
                 <input className="input" placeholder="e.g. Festival Sale Pamphlet" value={distTitle} onChange={(e) => setDistTitle(e.target.value)} />
@@ -177,9 +188,29 @@ export default function Marketplace() {
                 <textarea className="textarea" placeholder="Any specific instructions..." value={distDescription} onChange={(e) => setDistDescription(e.target.value)} />
               </div>
               <div className="input-group">
-                <label>Quantity</label>
-                <input className="input" type="number" min={1} value={distQuantity} onChange={(e) => setDistQuantity(Number(e.target.value))} />
+                <label>Select Areas &amp; Quantities</label>
+                {zones.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No delivery zones available. Contact admin.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {zones.map((z) => (
+                      <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <span style={{ minWidth: '140px', fontSize: '0.9rem' }}>{z.name}</span>
+                        <input
+                          className="input"
+                          type="number"
+                          min={0}
+                          placeholder="Qty"
+                          style={{ width: '100px' }}
+                          value={zoneQty[z.id] ?? ''}
+                          onChange={(e) => setZoneQty((p) => ({ ...p, [z.id]: e.target.value ? Number(e.target.value) : 0 }))}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+              <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Total: {totalQuantity} pamphlets</p>
               {distError && <p className="error-text">{distError}</p>}
               <button className="btn btn-primary btn-block" onClick={handleCreateDist} disabled={distSubmitting}>
                 {distSubmitting ? 'Submitting...' : 'Submit Request'}
@@ -200,14 +231,23 @@ export default function Marketplace() {
                     <div>
                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{d.title}</span>
                     </div>
-                    <span className="badge" style={{ backgroundColor: distStatusColor[d.status] || '#6b7280' }}>
+                    <span className="badge" style={{ backgroundColor: distStatusColor[d.status] || '#6b7280', color: '#fff' }}>
                       {d.status}
                     </span>
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
-                    Quantity: {d.requestedQuantity}
+                    Total: {d.requestedQuantity} pamphlets
                     {d.quotedPrice != null && <> &middot; Quoted: ₹{d.quotedPrice}</>}
                   </div>
+                  {d.zones && d.zones.length > 0 && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {d.zones.map((z) => (
+                        <span key={z.id} style={{ background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                          {z.deliveryZone.name}: {z.quantity}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {d.description && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{d.description}</p>}
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                     {new Date(d.createdAt).toLocaleDateString()}
@@ -221,17 +261,13 @@ export default function Marketplace() {
 
       {tab === 'article' && (
         <>
-          <button
-            className="btn btn-sm btn-primary"
-            style={{ marginBottom: '1rem' }}
-            onClick={() => setShowArticleForm(!showArticleForm)}
-          >
+          <button className="btn btn-sm btn-primary" style={{ marginBottom: '1rem' }} onClick={() => setShowArticleForm(!showArticleForm)}>
             {showArticleForm ? 'Cancel' : 'Submit Article'}
           </button>
 
           {showArticleForm && (
             <div className="card" style={{ marginBottom: '1rem' }}>
-              <h3>New Article Submission</h3>
+              <h3 style={{ marginBottom: '0.75rem' }}>New Article Submission</h3>
               <div className="input-group">
                 <label>Newspaper</label>
                 <select className="select" value={articleProductId} onChange={(e) => setArticleProductId(e.target.value)}>
@@ -273,7 +309,7 @@ export default function Marketplace() {
                     <div>
                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{a.title}</span>
                     </div>
-                    <span className="badge" style={{ backgroundColor: articleStatusColor[a.status] || '#6b7280' }}>
+                    <span className="badge" style={{ backgroundColor: articleStatusColor[a.status] || '#6b7280', color: '#fff' }}>
                       {a.status}
                     </span>
                   </div>

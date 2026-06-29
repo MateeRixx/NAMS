@@ -25,6 +25,9 @@ export default function Subscriptions() {
   const [form, setForm] = useState({ customerId: '', productId: '', startDate: '' });
   const [submitting, setSubmitting] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [pauseId, setPauseId] = useState<string | null>(null);
+  const [pauseForm, setPauseForm] = useState({ startDate: '', endDate: '', reason: '' });
+  const [resumeId, setResumeId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
 
   async function load() {
@@ -36,7 +39,7 @@ export default function Subscriptions() {
         client.get('/products'),
       ]);
       setSubs(subRes.data.data);
-      setCustomers(custRes.data.data);
+      setCustomers(Array.isArray(custRes.data.data) ? custRes.data.data : custRes.data.data.items);
       setProducts(prodRes.data.data);
     } finally {
       setLoading(false);
@@ -68,6 +71,36 @@ export default function Subscriptions() {
       await load();
       setMsg('Subscription cancelled');
     } catch { setMsg('Failed to cancel subscription'); }
+    finally { setSubmitting(false); }
+  }
+
+  async function handlePause(id: string) {
+    if (!pauseForm.startDate || !pauseForm.endDate) return;
+    setSubmitting(true);
+    setMsg('');
+    try {
+      await client.patch(`/subscriptions/${id}/pause`, {
+        startDate: new Date(pauseForm.startDate).toISOString(),
+        endDate: new Date(pauseForm.endDate).toISOString(),
+        reason: pauseForm.reason || undefined,
+      });
+      setPauseId(null);
+      setPauseForm({ startDate: '', endDate: '', reason: '' });
+      await load();
+      setMsg('Subscription paused');
+    } catch { setMsg('Failed to pause subscription'); }
+    finally { setSubmitting(false); }
+  }
+
+  async function handleResume(id: string) {
+    setSubmitting(true);
+    setMsg('');
+    try {
+      await client.patch(`/subscriptions/${id}/resume`);
+      setResumeId(null);
+      await load();
+      setMsg('Subscription resumed');
+    } catch { setMsg('Failed to resume subscription'); }
     finally { setSubmitting(false); }
   }
 
@@ -151,13 +184,63 @@ export default function Subscriptions() {
                 <td>{new Date(s.createdAt).toLocaleDateString()}</td>
                 <td>
                   {s.status === 'ACTIVE' && (
-                    <button className="btn btn-sm btn-danger" onClick={() => setCancelId(s.id)}>Cancel</button>
+                    <>
+                      <button className="btn btn-sm" onClick={() => setPauseId(s.id)} style={{ marginRight: '0.25rem' }}>Pause</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => setCancelId(s.id)}>Cancel</button>
+                    </>
+                  )}
+                  {s.status === 'PAUSED' && (
+                    <button className="btn btn-sm" onClick={() => setResumeId(s.id)}>Resume</button>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+
+      {pauseId && (
+        <div className="modal-overlay" onClick={() => { setPauseId(null); setPauseForm({ startDate: '', endDate: '', reason: '' }); }}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Pause Subscription</h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Set the pause period. No invoices will be generated during this time.</p>
+            <div className="form-row">
+              <div className="input-group">
+                <label>Start Date *</label>
+                <input className="input" type="date" value={pauseForm.startDate} onChange={(e) => setPauseForm({ ...pauseForm, startDate: e.target.value })} />
+              </div>
+              <div className="input-group">
+                <label>End Date *</label>
+                <input className="input" type="date" value={pauseForm.endDate} onChange={(e) => setPauseForm({ ...pauseForm, endDate: e.target.value })} />
+              </div>
+            </div>
+            <div className="input-group">
+              <label>Reason (optional)</label>
+              <input className="input" value={pauseForm.reason} onChange={(e) => setPauseForm({ ...pauseForm, reason: e.target.value })} placeholder="e.g. Vacation" />
+            </div>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => { setPauseId(null); setPauseForm({ startDate: '', endDate: '', reason: '' }); }}>Cancel</button>
+              <button className="btn btn-primary" onClick={() => handlePause(pauseId)} disabled={submitting || !pauseForm.startDate || !pauseForm.endDate}>
+                {submitting ? 'Pausing...' : 'Pause'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {resumeId && (
+        <div className="modal-overlay" onClick={() => setResumeId(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Resume Subscription</h3>
+            <p>Billing will resume as normal from today.</p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setResumeId(null)}>Cancel</button>
+              <button className="btn btn-primary" onClick={() => handleResume(resumeId)} disabled={submitting}>
+                {submitting ? 'Resuming...' : 'Yes, Resume'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {cancelId && (
