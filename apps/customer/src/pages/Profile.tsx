@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface Address {
   id: string;
@@ -37,10 +38,13 @@ export default function Profile() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [addrMsg, setAddrMsg] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteAddressId, setDeleteAddressId] = useState<string | null>(null);
 
   useEffect(() => {
     client.get('/customer-portal/addresses')
       .then((res) => setAddresses(res.data.data))
+      .catch(() => setAddrMsg('Failed to load addresses'))
       .finally(() => setLoadingAddr(false));
   }, []);
 
@@ -71,10 +75,11 @@ export default function Profile() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this address?')) return;
     try {
       await client.delete(`/customer-portal/addresses/${id}`);
       setAddresses((prev) => prev.filter((a) => a.id !== id));
+      setShowDeleteConfirm(false);
+      setDeleteAddressId(null);
     } catch { setAddrMsg('Failed to delete address'); }
   }
 
@@ -98,7 +103,7 @@ export default function Profile() {
   }
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>My Profile</h1>
         {!editing && <button className="btn btn-sm" onClick={() => setEditing(true)}>Edit</button>}
@@ -223,7 +228,7 @@ export default function Profile() {
               </div>
               <div className="action-row">
                 <button className="btn btn-sm" onClick={() => startEdit(addr)}>Edit</button>
-                <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(addr.id)}>Delete</button>
+                <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => { setDeleteAddressId(addr.id); setShowDeleteConfirm(true); }}>Delete</button>
               </div>
             </div>
           </div>
@@ -233,6 +238,16 @@ export default function Profile() {
       <div className="card">
         <button className="btn btn-danger btn-block" onClick={logout}>Logout</button>
       </div>
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Delete Address"
+        message="Are you sure you want to delete this address?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => deleteAddressId && handleDelete(deleteAddressId)}
+        onCancel={() => { setShowDeleteConfirm(false); setDeleteAddressId(null); }}
+      />
     </div>
   );
 }

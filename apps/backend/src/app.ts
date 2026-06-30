@@ -26,10 +26,20 @@ import paymentRoutes from './modules/payment/payment.routes.js';
 
 const app: Express = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", 'http://192.168.1.35:3000', 'http://localhost:3000', 'http://10.0.2.2:3000'],
+        upgradeInsecureRequests: null,
+      },
+    },
+  })
+);
 app.use(
   cors({
-    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL, 'http://localhost:3002', 'http://localhost:3003'],
+    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL, 'http://localhost:3002', 'http://localhost:3003', 'capacitor://localhost', 'http://localhost', 'https://localhost'],
     credentials: true,
   })
 );

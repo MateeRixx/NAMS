@@ -35,7 +35,7 @@ export default function Notifications() {
   if (loading) return <div className="loading">Loading...</div>;
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>Notifications</h1>
         {total > 0 && <span className="badge badge-pending">{total}</span>}

@@ -52,6 +52,8 @@ export default function Subscriptions() {
     try {
       const res = await client.get('/customer-portal/subscriptions');
       setSubscriptions(res.data.data);
+    } catch {
+      setGenMsg('Failed to load subscriptions');
     } finally {
       setLoading(false);
     }
@@ -83,6 +85,8 @@ export default function Subscriptions() {
       });
       setPauseModal(null);
       await load();
+    } catch {
+      setGenMsg('Failed to pause subscription');
     } finally {
       setProcessing(false);
     }
@@ -94,6 +98,8 @@ export default function Subscriptions() {
       await client.patch(`/customer-portal/subscriptions/${id}/cancel`);
       setCancelId(null);
       await load();
+    } catch {
+      setGenMsg('Failed to cancel subscription');
     } finally {
       setProcessing(false);
     }
@@ -104,6 +110,8 @@ export default function Subscriptions() {
     try {
       await client.patch(`/customer-portal/subscriptions/${id}/resume`);
       await load();
+    } catch {
+      setGenMsg('Failed to resume subscription');
     } finally {
       setProcessing(false);
     }
@@ -117,7 +125,7 @@ export default function Subscriptions() {
   const tr = t();
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>{tr.subs_title}</h1>
       </div>
@@ -210,7 +218,10 @@ export default function Subscriptions() {
       {cancelId && (
         <div className="modal-overlay" onClick={() => setCancelId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{tr.subs_confirm_cancel_title}</h3>
+            <div className="modal-header">
+              <h3>{tr.subs_confirm_cancel_title}</h3>
+              <button className="modal-close" onClick={() => setCancelId(null)} aria-label="Close">&times;</button>
+            </div>
             <p className="text-sm">{tr.subs_confirm_cancel_body}</p>
             <div className="modal-actions">
               <button className="btn" onClick={() => setCancelId(null)}>{tr.subs_keep}</button>
@@ -225,7 +236,10 @@ export default function Subscriptions() {
       {pauseModal && (
         <div className="modal-overlay" onClick={() => setPauseModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{tr.subs_pause_title}</h3>
+            <div className="modal-header">
+              <h3>{tr.subs_pause_title}</h3>
+              <button className="modal-close" onClick={() => setPauseModal(null)} aria-label="Close">&times;</button>
+            </div>
             <div className="input-group">
               <label>{tr.subs_pause_start}</label>
               <input className="input" type="date" value={pauseModal.start}

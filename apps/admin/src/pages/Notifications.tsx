@@ -67,7 +67,7 @@ export default function Notifications() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Notifications</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setShowSend(!showSend)}>

@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NewsFlow - Customer Portal</title>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var d = document.getElementById('root');
+        d.innerHTML = '<pre style="color:red;padding:20px;font-size:14px;white-space:pre-wrap">ERROR: ' + msg + '\n' + (error ? error.stack : '') + '</pre>';
+        return true;
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var d = document.getElementById('root');
+        d.innerHTML = '<pre style="color:red;padding:20px;font-size:14px;white-space:pre-wrap">PROMISE ERROR: ' + e.reason + '</pre>';
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -27,6 +27,7 @@ export default function AuditLogs() {
         setLogs(res.data.data.logs);
         setTotal(res.data.data.total);
       })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [page]);
 
@@ -35,7 +36,7 @@ export default function AuditLogs() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="page">
+    <div className="page" style={{ animation: 'pageIn 0.25s ease-out' }}>
       <h1>Audit Logs</h1>
       <p className="text-muted">Total: {total} entries</p>
 

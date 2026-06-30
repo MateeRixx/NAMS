@@ -34,6 +34,7 @@ export default function Complaints() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [noteModal, setNoteModal] = useState<{ id: string; nextStatus: string } | null>(null);
   const [note, setNote] = useState('');
+  const [msg, setMsg] = useState('');
 
   async function load() {
     setLoading(true);
@@ -56,7 +57,7 @@ export default function Complaints() {
       setNote('');
       await load();
     } catch {
-      alert('Failed to update status');
+      setMsg('Failed to update status');
     } finally {
       setProcessing(null);
     }
@@ -71,7 +72,7 @@ export default function Complaints() {
       setNote('');
       await load();
     } catch {
-      alert('Failed to update status');
+      setMsg('Failed to update status');
     } finally {
       setProcessing(null);
     }
@@ -80,7 +81,7 @@ export default function Complaints() {
   const filtered = statusFilter ? complaints.filter((c) => c.status === statusFilter) : complaints;
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Complaints</h1>
         <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
@@ -91,6 +92,8 @@ export default function Complaints() {
           <option value="CLOSED">Closed</option>
         </select>
       </div>
+
+      {msg && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{msg}</div>}
 
       {loading ? <div className="loading">Loading...</div> : filtered.length === 0 ? (
         <div className="empty-state"><p>No complaints found</p></div>
@@ -174,7 +177,10 @@ export default function Complaints() {
       {noteModal && (
         <div className="modal-overlay" onClick={() => setNoteModal(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Update Status to {noteModal.nextStatus}</h3>
+            <div className="modal-header">
+              <h2>Update Status to {noteModal.nextStatus}</h2>
+              <button className="modal-close" onClick={() => setNoteModal(null)}>&times;</button>
+            </div>
             <div className="input-group">
               <label>Notes (optional)</label>
               <textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add notes..." rows={3} />

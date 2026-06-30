@@ -38,10 +38,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string) {
     const res = await client.post('/auth/login', { email, password });
-    const { token: newToken, user: userData } = res.data.data;
-    localStorage.setItem('token', newToken);
-    setToken(newToken);
-    setUser(userData);
+    const { token: newToken, user: userData } = res.data?.data ?? {};
+    if (newToken && userData) {
+      localStorage.setItem('token', newToken);
+      setToken(newToken);
+      setUser(userData);
+    }
   }
 
   function logout() {

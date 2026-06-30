@@ -48,7 +48,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page page-enter">
       <div className="login-card" style={{ width: '440px' }}>
         <h1>NewsFlow</h1>
         <p className="subtitle">Complete Your Profile</p>

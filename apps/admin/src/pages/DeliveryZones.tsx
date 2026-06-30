@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface Zone {
   id: string;
@@ -17,6 +18,7 @@ export default function DeliveryZones() {
   const [form, setForm] = useState({ name: '', description: '', monthlyCharge: '' });
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -66,10 +68,10 @@ export default function DeliveryZones() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this delivery zone?')) return;
     setMsg('');
     try {
       await client.delete(`/delivery-zones/${id}`);
+      setDeleteConfirm(null);
       await load();
       setMsg('Zone deleted');
     } catch {
@@ -78,7 +80,7 @@ export default function DeliveryZones() {
   }
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Delivery Zones</h1>
         <button className="btn btn-primary btn-sm" onClick={() => { resetForm(); setShowForm(true); }}>
@@ -137,7 +139,7 @@ export default function DeliveryZones() {
                 <td>
                   <div style={{ display: 'flex', gap: '0.25rem' }}>
                     <button className="btn btn-sm" onClick={() => startEdit(z)}>Edit</button>
-                    <button className="btn btn-sm btn-danger" onClick={() => handleDelete(z.id)}>Delete</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => setDeleteConfirm(z.id)}>Delete</button>
                   </div>
                 </td>
               </tr>
@@ -145,6 +147,16 @@ export default function DeliveryZones() {
           </tbody>
         </table>
       )}
+
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Delete Zone"
+        message="Delete this delivery zone?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

@@ -18,7 +18,9 @@ export default function ForgotPassword() {
     setMessage('');
     try {
       const res = await client.post('/auth/customer/forgot-password', { email });
-      setMessage(res.data.data.message);
+      const data = res.data?.data ?? {};
+      let msg = data.message ?? 'OTP sent to your email';
+      setMessage(msg);
       setStep('otp');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed');
@@ -35,7 +37,7 @@ export default function ForgotPassword() {
     setMessage('');
     try {
       const res = await client.post('/auth/customer/reset-password', { email, otp, password });
-      setMessage(res.data.data.message);
+      setMessage(res.data?.data?.message ?? 'Password reset successfully');
       setStep('done');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed');
@@ -45,7 +47,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page page-enter">
       <div className="login-card">
         <h1>NewsFlow</h1>
         <p className="subtitle">Reset Password</p>

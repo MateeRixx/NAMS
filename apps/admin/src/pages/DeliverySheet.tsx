@@ -29,6 +29,7 @@ export default function DeliverySheet() {
   useEffect(() => {
     client.get('/customers/delivery-sheet')
       .then((res) => setData(res.data.data))
+      .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, []);
 
@@ -65,7 +66,7 @@ export default function DeliverySheet() {
   if (!data) return <div className="loading">Failed to load</div>;
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Delivery Sheet</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface Charge {
   id: string;
@@ -18,6 +19,7 @@ export default function BillingCharges() {
   const [form, setForm] = useState({ name: '', description: '', amount: '', type: 'FIXED' });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -68,19 +70,19 @@ export default function BillingCharges() {
     try {
       await client.patch(`/billing-charges/${c.id}`, { isActive: !c.isActive });
       await load();
-    } catch { /* ignore */ }
+    } catch { setFormError('Failed to toggle status'); }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this charge?')) return;
     try {
       await client.delete(`/billing-charges/${id}`);
+      setDeleteConfirm(null);
       await load();
-    } catch { /* ignore */ }
+    } catch { setFormError('Failed to delete charge'); }
   }
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Billing Charges</h1>
         <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', description: '', amount: '', type: 'FIXED' }); }}>
@@ -148,7 +150,7 @@ export default function BillingCharges() {
                       <div style={{ display: 'flex', gap: '0.4rem' }}>
                         <button className="btn btn-sm" onClick={() => startEdit(c)}>Edit</button>
                         <button className="btn btn-sm" onClick={() => toggleActive(c)}>{c.isActive ? 'Deactivate' : 'Activate'}</button>
-                        <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(c.id)}>Delete</button>
+                        <button className="btn btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setDeleteConfirm(c.id)}>Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -158,6 +160,16 @@ export default function BillingCharges() {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!deleteConfirm}
+        title="Delete Charge"
+        message="Delete this charge?"
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
+        onCancel={() => setDeleteConfirm(null)}
+      />
     </div>
   );
 }

@@ -22,14 +22,17 @@ interface DashboardStats {
 export default function Dashboard() {
   const [data, setData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     client.get('/reports/dashboard')
       .then((res) => setData(res.data.data))
+      .catch(() => setError('Failed to load dashboard data'))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="loading">Loading...</div>;
+  if (error) return <div className="loading" style={{ color: 'var(--danger)' }}>{error}</div>;
 
   const cards = [
     { label: 'Active Customers', value: data?.activeCustomers ?? 0, sub: `${data?.customers ?? 0} total`, color: '#3b82f6' },
@@ -41,7 +44,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <h1>Dashboard</h1>
       <div className="card-grid">
         {cards.map((c) => (

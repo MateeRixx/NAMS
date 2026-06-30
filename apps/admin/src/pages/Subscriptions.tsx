@@ -29,6 +29,7 @@ export default function Subscriptions() {
   const [pauseForm, setPauseForm] = useState({ startDate: '', endDate: '', reason: '' });
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState<'success' | 'error'>('success');
 
   async function load() {
     setLoading(true);
@@ -57,8 +58,8 @@ export default function Subscriptions() {
       setShowForm(false);
       setForm({ customerId: '', productId: '', startDate: '' });
       await load();
-      setMsg('Subscription created');
-    } catch { setMsg('Failed to create subscription'); }
+      setMsg('Subscription created'); setMsgType('success');
+    } catch { setMsg('Failed to create subscription'); setMsgType('error'); }
     finally { setSubmitting(false); }
   }
 
@@ -69,8 +70,8 @@ export default function Subscriptions() {
       await client.patch(`/subscriptions/${id}/cancel`);
       setCancelId(null);
       await load();
-      setMsg('Subscription cancelled');
-    } catch { setMsg('Failed to cancel subscription'); }
+      setMsg('Subscription cancelled'); setMsgType('success');
+    } catch { setMsg('Failed to cancel subscription'); setMsgType('error'); }
     finally { setSubmitting(false); }
   }
 
@@ -87,8 +88,8 @@ export default function Subscriptions() {
       setPauseId(null);
       setPauseForm({ startDate: '', endDate: '', reason: '' });
       await load();
-      setMsg('Subscription paused');
-    } catch { setMsg('Failed to pause subscription'); }
+      setMsg('Subscription paused'); setMsgType('success');
+    } catch { setMsg('Failed to pause subscription'); setMsgType('error'); }
     finally { setSubmitting(false); }
   }
 
@@ -99,15 +100,15 @@ export default function Subscriptions() {
       await client.patch(`/subscriptions/${id}/resume`);
       setResumeId(null);
       await load();
-      setMsg('Subscription resumed');
-    } catch { setMsg('Failed to resume subscription'); }
+      setMsg('Subscription resumed'); setMsgType('success');
+    } catch { setMsg('Failed to resume subscription'); setMsgType('error'); }
     finally { setSubmitting(false); }
   }
 
   const filtered = statusFilter ? subs.filter((s) => s.status === statusFilter) : subs;
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Subscriptions</h1>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -123,7 +124,7 @@ export default function Subscriptions() {
         </div>
       </div>
 
-      {msg && <div className="card" style={{ background: '#d1fae5', marginBottom: '1rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>{msg}</div>}
+      {msg && <div className="card" style={{ background: msgType === 'error' ? '#fee2e2' : '#d1fae5', marginBottom: '1rem', fontSize: '0.85rem', padding: '0.5rem 1rem' }}>{msg}</div>}
 
       {showForm && (
         <div className="card" style={{ marginBottom: '1rem' }}>
@@ -202,7 +203,10 @@ export default function Subscriptions() {
       {pauseId && (
         <div className="modal-overlay" onClick={() => { setPauseId(null); setPauseForm({ startDate: '', endDate: '', reason: '' }); }}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Pause Subscription</h3>
+            <div className="modal-header">
+              <h2>Pause Subscription</h2>
+              <button className="modal-close" onClick={() => { setPauseId(null); setPauseForm({ startDate: '', endDate: '', reason: '' }); }}>&times;</button>
+            </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Set the pause period. No invoices will be generated during this time.</p>
             <div className="form-row">
               <div className="input-group">
@@ -231,7 +235,10 @@ export default function Subscriptions() {
       {resumeId && (
         <div className="modal-overlay" onClick={() => setResumeId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Resume Subscription</h3>
+            <div className="modal-header">
+              <h2>Resume Subscription</h2>
+              <button className="modal-close" onClick={() => setResumeId(null)}>&times;</button>
+            </div>
             <p>Billing will resume as normal from today.</p>
             <div className="modal-actions">
               <button className="btn" onClick={() => setResumeId(null)}>Cancel</button>
@@ -246,7 +253,10 @@ export default function Subscriptions() {
       {cancelId && (
         <div className="modal-overlay" onClick={() => setCancelId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Cancel Subscription</h3>
+            <div className="modal-header">
+              <h2>Cancel Subscription</h2>
+              <button className="modal-close" onClick={() => setCancelId(null)}>&times;</button>
+            </div>
             <p>A final invoice will be generated for days used. This cannot be undone.</p>
             <div className="modal-actions">
               <button className="btn" onClick={() => setCancelId(null)}>Keep</button>

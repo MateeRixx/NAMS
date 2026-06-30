@@ -44,7 +44,7 @@ export default function Products() {
   const tr = t();
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>{tr.products_title}</h1>
       </div>

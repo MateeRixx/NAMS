@@ -40,6 +40,8 @@ export default function Payments() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showRetryModal, setShowRetryModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState<'success' | 'error'>('success');
   const pageSize = 20;
 
   const [recordForm, setRecordForm] = useState({
@@ -93,8 +95,8 @@ export default function Payments() {
       setRecordForm({ invoiceId: '', amount: '', method: 'CASH', transactionReference: '' });
       fetchPayments();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to record payment';
-      alert(msg);
+      const m = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to record payment';
+      setMsg(m); setMsgType('error');
     }
   };
 
@@ -111,8 +113,8 @@ export default function Payments() {
       fetchRefunds();
       fetchPayments();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to process refund';
-      alert(msg);
+      const m = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to process refund';
+      setMsg(m); setMsgType('error');
     }
   };
 
@@ -122,19 +124,19 @@ export default function Payments() {
       setShowRetryModal(false);
       fetchPayments();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to retry payment';
-      alert(msg);
+      const m = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to retry payment';
+      setMsg(m); setMsgType('error');
     }
   };
 
   const handleRetryAllFailed = async () => {
     try {
       const res = await client.post('/payments/retry-all-failed');
-      alert(`Retried ${res.data.data.retried} failed payment(s)`);
+      setMsg(`Retried ${res.data.data.retried} failed payment(s)`); setMsgType('success');
       fetchPayments();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to retry payments';
-      alert(msg);
+      const m = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to retry payments';
+      setMsg(m); setMsgType('error');
     }
   };
 
@@ -151,7 +153,8 @@ export default function Payments() {
   const totalPages = Math.ceil((tab === 'payments' ? totalPayments : totalRefunds) / pageSize);
 
   return (
-    <div className="page">
+    <div className="page" style={{ animation: 'pageIn 0.25s ease-out' }}>
+      {msg && <div style={{ color: msgType === 'success' ? 'var(--success)' : 'var(--danger)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{msg}</div>}
       <div className="page-header">
         <h1>Payments</h1>
         <div className="page-actions">

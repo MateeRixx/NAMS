@@ -78,7 +78,7 @@ export default function Billing() {
   if (customerFilter) filtered = filtered.filter((i) => i.customerId === customerFilter);
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Invoices</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setShowGenerate(!showGenerate)}>

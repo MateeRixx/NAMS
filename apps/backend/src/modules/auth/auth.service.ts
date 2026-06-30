@@ -241,6 +241,10 @@ export async function customerRegister(dto: CustomerRegisterDto): Promise<{ mess
   await sendEmail({ to: dto.email, subject: 'Verify your NewsFlow email', html });
   console.log(`[DEV] Email OTP for ${dto.email}: ${otp}`);
 
+  if (config.NODE_ENV === 'development') {
+    return { message: `Account created. Your OTP is ${otp} (dev mode)`, otp };
+  }
+
   return { message: 'Account created. Please check your email for the verification OTP.' };
 }
 
@@ -360,6 +364,10 @@ export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Pr
 
   await sendEmail({ to: dto.email, subject: 'Reset your NewsFlow password', html });
   console.log(`[DEV] Reset OTP for ${dto.email}: ${otp}`);
+
+  if (config.NODE_ENV === 'development') {
+    return { message: `If an account exists, OTP ${otp} has been sent (dev mode)`, otp };
+  }
 
   return { message: 'If an account with that email exists, an OTP has been sent.' };
 }

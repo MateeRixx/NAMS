@@ -27,7 +27,8 @@ export default function Register() {
     setError('');
     setMessage('');
     try {
-      const msg = await register(email, password, firstName.trim(), lastName.trim(), phone.trim() || undefined);
+      const result = await register(email, password, firstName.trim(), lastName.trim(), phone.trim() || undefined);
+      let msg = result.message ?? 'Account created. Please check your email for the verification OTP.';
       setMessage(msg);
       setStep('otp');
     } catch (err: unknown) {
@@ -52,7 +53,7 @@ export default function Register() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page page-enter">
       <div className="login-card">
         <h1>NewsFlow</h1>
         <p className="subtitle">{step === 'form' ? 'Create Account' : 'Verify Email'}</p>
@@ -114,7 +115,7 @@ export default function Register() {
             <button className="btn btn-primary btn-block" onClick={handleVerify} disabled={loading}>
               {loading ? 'Verifying...' : 'Verify & Login'}
             </button>
-            <button className="btn btn-block" onClick={() => { setStep('form'); setOtp(''); setError(''); }} style={{ marginTop: '0.5rem' }}>
+            <button className="btn btn-block" onClick={() => { setStep('form'); setOtp(''); setError(''); }} disabled={loading} style={{ marginTop: '0.5rem' }}>
               Change Details
             </button>
           </>

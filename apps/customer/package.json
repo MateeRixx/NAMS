@@ -7,15 +7,26 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:build": "tsc -b && vite build",
+    "mobile:build:emu": "set VITE_API_URL=http://10.0.2.2:3000/api/v1 && tsc -b && vite build",
+    "mobile:build:device": "set VITE_API_URL=http://192.168.1.35:3000/api/v1 && tsc -b && vite build",
+    "mobile:sync": "cap sync",
+    "mobile:copy": "cap copy",
+    "mobile:open:android": "cap open android",
+    "mobile:dev": "vite"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/haptics": "^8.0.2",
     "axios": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.17.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^24.12.3",
     "@types/react": "^19.2.14",

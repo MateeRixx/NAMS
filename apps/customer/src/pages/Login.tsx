@@ -31,7 +31,7 @@ export default function Login() {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page page-enter">
       <div className="login-card">
         <h1>NewsFlow</h1>
         <p className="subtitle">Customer Portal</p>

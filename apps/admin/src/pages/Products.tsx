@@ -138,7 +138,7 @@ export default function Products() {
   }
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Products</h1>
         <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' }); setDayRateInputs({ ...emptyDayRates }); }}>

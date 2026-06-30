@@ -151,7 +151,7 @@ export default function Cart() {
 
   if (items.length === 0 && !estimate && !loading) {
     return (
-      <div>
+      <div className="page-enter">
         <div className="page-header"><h1>{tr.cart_empty}</h1></div>
         <div className="empty-state">
           <p>{tr.cart_empty}</p>
@@ -163,7 +163,7 @@ export default function Cart() {
   }
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>{tr.nav_cart} ({items.length})</h1>
         <button className="btn btn-sm btn-ghost" onClick={() => { clearCart(); setEstimate(null); }}>{tr.cart_clear}</button>

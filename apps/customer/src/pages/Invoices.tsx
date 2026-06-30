@@ -114,7 +114,7 @@ export default function Invoices() {
   const tr = t();
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>{tr.invoices_title}</h1>
       </div>
@@ -175,7 +175,7 @@ export default function Invoices() {
                     <span className="value font-bold">₹{Number(inv.totalAmount).toFixed(2)}</span>
                   </div>
                   <div className="action-row mt-3">
-                    <button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); downloadPdf(inv.id); }}>
+                    <button className="btn btn-sm" onClick={async (e) => { e.stopPropagation(); try { await downloadPdf(inv.id); } catch { setMsg('Failed to download PDF'); } }}>
                       {tr.invoices_download}
                     </button>
                     {inv.status !== 'PAID' && (
@@ -209,6 +209,6 @@ async function downloadPdf(id: string) {
     a.click();
     URL.revokeObjectURL(url);
   } catch {
-    alert('Failed to download PDF');
+    throw new Error('Failed to download PDF');
   }
 }

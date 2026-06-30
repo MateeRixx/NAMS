@@ -14,12 +14,18 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const isLoginRequest = err.config?.url?.includes('/auth/') && err.config?.method === 'post';
+    if (err.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('customer_token');
       localStorage.removeItem('customer_user');
       window.location.href = '/login';
     }
-    return Promise.reject(err);
+    const msg =
+      err.response?.data?.error?.message ??
+      err.response?.data?.message ??
+      err.message ??
+      'Something went wrong';
+    return Promise.reject(new Error(msg));
   }
 );
 

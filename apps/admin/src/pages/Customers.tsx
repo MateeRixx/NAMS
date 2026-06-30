@@ -180,7 +180,7 @@ export default function Customers() {
   }
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Customers</h1>
         <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
@@ -370,7 +370,10 @@ export default function Customers() {
       {editingCustomer && (
         <div className="modal-overlay" onClick={() => setEditingCustomer(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Edit Customer — {editingCustomer.customerCode}</h3>
+            <div className="modal-header">
+              <h2>Edit Customer</h2>
+              <button className="modal-close" onClick={() => setEditingCustomer(null)}>&times;</button>
+            </div>
             <div className="form-row">
               <div className="input-group">
                 <label>First Name *</label>

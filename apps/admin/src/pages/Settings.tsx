@@ -98,7 +98,7 @@ export default function Settings() {
   if (loading) return <div className="loading">Loading...</div>;
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <h1>Settings</h1>
 
       <div className="tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>

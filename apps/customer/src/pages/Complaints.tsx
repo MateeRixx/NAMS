@@ -26,6 +26,8 @@ export default function Complaints() {
     try {
       const res = await client.get('/customer-portal/complaints');
       setComplaints(res.data.data);
+    } catch {
+      setError('Failed to load complaints');
     } finally {
       setLoading(false);
     }
@@ -42,6 +44,7 @@ export default function Complaints() {
       setShowForm(false);
       setType('MISSED_DELIVERY');
       setDescription('');
+      setError('Complaint submitted successfully');
       await load();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to submit complaint');
@@ -53,10 +56,10 @@ export default function Complaints() {
   if (loading) return <div className="loading">Loading...</div>;
 
   return (
-    <div>
+    <div className="page-enter">
       <div className="page-header">
         <h1>Complaints</h1>
-        <button className="btn btn-sm btn-primary" onClick={() => setShowForm(!showForm)}>
+        <button className="btn btn-sm btn-primary" onClick={() => { setShowForm(!showForm); setError(''); }}>
           {showForm ? 'Cancel' : 'New Complaint'}
         </button>
       </div>

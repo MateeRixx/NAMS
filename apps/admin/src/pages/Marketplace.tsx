@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
+import PromptModal from '../components/PromptModal';
 
 interface DistZone {
   id: string;
@@ -57,6 +58,7 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [selectedDist, setSelectedDist] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
+  const [promptModal, setPromptModal] = useState<{ type: 'price' | 'notes' | 'reject'; requestId: string } | null>(null);
 
   function loadAll() {
     setLoading(true);
@@ -84,7 +86,7 @@ export default function Marketplace() {
   if (loading) return <div className="loading">Loading...</div>;
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <h1>Marketplace</h1>
       <div className="tabs" style={{ marginBottom: '1rem' }}>
         <button
@@ -144,12 +146,7 @@ export default function Marketplace() {
                       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {d.status === 'PENDING' && (
                           <>
-                            <button className="btn btn-sm btn-primary" onClick={() => {
-                              const price = prompt('Enter quoted price (₹):');
-                              if (price && !isNaN(Number(price))) {
-                                updateDist(d.id, { quotedPrice: Number(price) });
-                              }
-                            }}>
+                            <button className="btn btn-sm btn-primary" onClick={() => setPromptModal({ type: 'price', requestId: d.id })}>
                               Provide Quotation
                             </button>
                             <button className="btn btn-sm btn-danger" onClick={() => updateDist(d.id, { status: 'CANCELLED' })}>
@@ -186,6 +183,47 @@ export default function Marketplace() {
           </tbody>
         </table>
       )}
+
+      <PromptModal
+        open={promptModal?.type === 'price'}
+        title="Provide Quotation"
+        label="Quoted Price (₹)"
+        placeholder="Enter price"
+        confirmLabel="Submit Price"
+        onConfirm={(val) => {
+          if (val && !isNaN(Number(val))) {
+            updateDist(promptModal!.requestId, { quotedPrice: Number(val) });
+          }
+          setPromptModal(null);
+        }}
+        onCancel={() => setPromptModal(null)}
+      />
+
+      <PromptModal
+        open={promptModal?.type === 'notes'}
+        title="Approve Article"
+        label="Review Notes (optional)"
+        placeholder="Add notes..."
+        confirmLabel="Approve"
+        onConfirm={(val) => {
+          updateArticle(promptModal!.requestId, { status: 'APPROVED', reviewNotes: val || undefined });
+          setPromptModal(null);
+        }}
+        onCancel={() => setPromptModal(null)}
+      />
+
+      <PromptModal
+        open={promptModal?.type === 'reject'}
+        title="Reject Article"
+        label="Rejection Reason"
+        placeholder="Enter reason..."
+        confirmLabel="Reject"
+        onConfirm={(val) => {
+          updateArticle(promptModal!.requestId, { status: 'REJECTED', reviewNotes: val || undefined });
+          setPromptModal(null);
+        }}
+        onCancel={() => setPromptModal(null)}
+      />
 
       {tab === 'article' && (
         <table className="table">
@@ -229,16 +267,10 @@ export default function Marketplace() {
                         )}
                         {a.status === 'UNDER_REVIEW' && (
                           <>
-                            <button className="btn btn-sm btn-primary" onClick={async () => {
-                              const notes = prompt('Review notes (optional):');
-                              await updateArticle(a.id, { status: 'APPROVED', reviewNotes: notes || undefined });
-                            }}>
+                            <button className="btn btn-sm btn-primary" onClick={() => setPromptModal({ type: 'notes', requestId: a.id })}>
                               Approve
                             </button>
-                            <button className="btn btn-sm btn-danger" onClick={async () => {
-                              const notes = prompt('Rejection reason:');
-                              await updateArticle(a.id, { status: 'REJECTED', reviewNotes: notes || undefined });
-                            }}>
+                            <button className="btn btn-sm btn-danger" onClick={() => setPromptModal({ type: 'reject', requestId: a.id })}>
                               Reject
                             </button>
                           </>

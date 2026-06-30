@@ -69,7 +69,7 @@ export default function Reports() {
     const params: Record<string, string | number> = {};
     if (filterYear) params.year = filterYear;
     if (filterMonth) params.month = filterMonth;
-    client.get('/reports/revenue', { params }).then((r) => setRevenue(r.data.data));
+    client.get('/reports/revenue', { params }).then((r) => setRevenue(r.data.data)).catch(() => {});
   }
 
   function loadAll() {
@@ -86,7 +86,7 @@ export default function Reports() {
       setComplaints(c.data.data);
       setGrowth(g.data.data);
       setCollections(col.data.data);
-    }).finally(() => setLoading(false));
+    }).catch(() => {}).finally(() => setLoading(false));
   }
 
   useEffect(() => { loadAll(); }, []);
@@ -108,7 +108,7 @@ export default function Reports() {
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   return (
-    <div>
+    <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Reports</h1>
         <div className="tabs" style={{ marginBottom: '1rem' }}>

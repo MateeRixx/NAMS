@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import PullToRefresh from '../components/PullToRefresh';
 
 interface DashboardData {
   activeSubscriptions: number;
@@ -35,11 +36,15 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    client.get('/customer-portal/dashboard')
-      .then((res) => setData(res.data.data))
-      .finally(() => setLoading(false));
+  const loadDashboard = useCallback(async () => {
+    const res = await client.get('/customer-portal/dashboard');
+    setData(res.data.data);
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    loadDashboard().finally(() => setLoading(false));
+  }, [loadDashboard]);
 
   if (loading) return <div className="loading">Loading...</div>;
   if (!data) return <div className="loading">Failed to load dashboard</div>;
@@ -51,7 +56,8 @@ export default function Dashboard() {
   ];
 
   return (
-    <div>
+    <div className="page-enter">
+      <PullToRefresh onRefresh={loadDashboard}>
       <h1 style={{ fontSize: '1.25rem', marginBottom: '0.25rem' }}>Welcome, {user?.firstName}</h1>
       <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Here's your account overview</p>
 
@@ -152,6 +158,7 @@ export default function Dashboard() {
           </table>
         )}
       </div>
+      </PullToRefresh>
     </div>
   );
 }
