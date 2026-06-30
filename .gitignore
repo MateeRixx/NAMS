@@ -21,3 +21,9 @@ coverage/
 
 # Docker
 .docker/
+
+# Android / Capacitor build artifacts
+apps/**/android/.gradle/
+apps/**/android/build/
+apps/**/android/capacitor-cordova-android-plugins/build/
+apps/**/android/app/build/
