@@ -19,7 +19,7 @@ export default function ForgotPassword() {
     try {
       const res = await client.post('/auth/customer/forgot-password', { email });
       const data = res.data?.data ?? {};
-      let msg = data.message ?? 'OTP sent to your email';
+      const msg = data.message ?? 'OTP sent to your email';
       setMessage(msg);
       setStep('otp');
     } catch (err: unknown) {

@@ -10,29 +10,29 @@ interface PullToRefreshProps {
 
 export default function PullToRefresh({ onRefresh, children }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const startY = useRef(0);
-  const pulling = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (refreshing) return;
     if (containerRef.current && containerRef.current.scrollTop > 0) return;
     startY.current = e.touches[0].clientY;
-    pulling.current = true;
+    setIsPulling(true);
   }, [refreshing]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!pulling.current || refreshing) return;
+    if (!isPulling || refreshing) return;
     const delta = e.touches[0].clientY - startY.current;
     if (delta <= 0) { setPullDistance(0); return; }
     const damped = Math.min(delta * 0.5, MAX_PULL);
     setPullDistance(damped);
-  }, [refreshing]);
+  }, [isPulling, refreshing]);
 
   const handleTouchEnd = useCallback(async () => {
-    if (!pulling.current || refreshing) return;
-    pulling.current = false;
+    if (!isPulling || refreshing) return;
+    setIsPulling(false);
     if (pullDistance >= THRESHOLD) {
       setPullDistance(THRESHOLD);
       setRefreshing(true);
@@ -45,7 +45,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
     } else {
       setPullDistance(0);
     }
-  }, [pullDistance, refreshing, onRefresh]);
+  }, [pullDistance, refreshing, isPulling, onRefresh]);
 
   const progress = Math.min(pullDistance / THRESHOLD, 1);
 
@@ -60,7 +60,7 @@ export default function PullToRefresh({ onRefresh, children }: PullToRefreshProp
       <div
         style={{
           height: pullDistance,
-          transition: pulling.current ? 'none' : 'height 0.3s ease',
+          transition: isPulling ? 'none' : 'height 0.3s ease',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

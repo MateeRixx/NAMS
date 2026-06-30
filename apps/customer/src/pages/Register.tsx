@@ -28,7 +28,7 @@ export default function Register() {
     setMessage('');
     try {
       const result = await register(email, password, firstName.trim(), lastName.trim(), phone.trim() || undefined);
-      let msg = result.message ?? 'Account created. Please check your email for the verification OTP.';
+      const msg = result.message ?? 'Account created. Please check your email for the verification OTP.';
       setMessage(msg);
       setStep('otp');
     } catch (err: unknown) {

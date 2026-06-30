@@ -195,7 +195,7 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
   };
 }
 
-export async function customerRegister(dto: CustomerRegisterDto): Promise<{ message: string }> {
+export async function customerRegister(dto: CustomerRegisterDto): Promise<{ message: string; otp?: string }> {
   const agency = await prisma.agency.findFirst();
   if (!agency) {
     throw new NotFoundError('Agency');
@@ -337,7 +337,7 @@ export async function customerLogin(dto: CustomerLoginDto): Promise<CustomerAuth
   };
 }
 
-export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Promise<{ message: string }> {
+export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Promise<{ message: string; otp?: string }> {
   const agency = await prisma.agency.findFirst();
   if (!agency) throw new NotFoundError('Agency');
 
