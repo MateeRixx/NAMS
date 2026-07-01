@@ -12,9 +12,9 @@ services:
       - '3000:3000'
     environment:
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/newsflow?schema=public
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev-jwt-secret-that-is-at-least-32-characters-long
+      DATABASE_URL: postgresql://neondb_owner:***REMOVED***@***REMOVED***.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+      REDIS_URL: rediss://default:***REMOVED***@square-coyote-110055.upstash.io:6379
+      JWT_SECRET: ***REMOVED***
       PAYMENT_PROVIDER: razorpay
       PAYMENT_KEY_ID: ***REMOVED***
       PAYMENT_KEY_SECRET: ***REMOVED***
@@ -27,9 +27,4 @@ services:
       - ./packages/shared/src:/app/packages/shared/src
       - ./packages/database/src:/app/packages/database/src
       - ./packages/database/prisma:/app/packages/database/prisma
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: sh -c "pnpm --filter=database db:push && pnpm --filter=database db:seed && pnpm dev"
+    command: sh -c "pnpm --filter=database db:push && pnpm dev"

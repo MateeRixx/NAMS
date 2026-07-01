@@ -12,7 +12,7 @@ RUN pnpm install --frozen-lockfile
 FROM base AS development
 COPY . .
 RUN pnpm db:generate
-CMD ["sh", "-c", "pnpm --filter=database db:push && pnpm --filter=database db:seed && pnpm dev"]
+CMD ["sh", "-c", "pnpm --filter=database db:push && pnpm dev"]
 
 FROM base AS builder
 COPY . .
