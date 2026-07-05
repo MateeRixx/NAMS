@@ -24,6 +24,23 @@ async function main() {
   }
 }
 
+process.on('uncaughtException', (err) => {
+  if (err.message?.includes('Prisma') || err.message?.includes('postgres')) {
+    console.warn('[Server] Prisma/DB error caught:', err.message);
+  } else {
+    console.error('[Server] Uncaught exception:', err);
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (err: Error) => {
+  if (err.message?.includes('Prisma') || err.message?.includes('postgres')) {
+    console.warn('[Server] Prisma/DB rejection caught:', err.message);
+  } else {
+    console.error('[Server] Unhandled rejection:', err);
+  }
+});
+
 function handleShutdown() {
   console.log('\nShutting down...');
   stopAllWorkers().catch(() => {});

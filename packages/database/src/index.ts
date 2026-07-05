@@ -12,6 +12,10 @@ export const prisma =
     log: process.env['NODE_ENV'] === 'development' ? ['query', 'error', 'warn'] : ['error'],
   });
 
+prisma.$on('error', () => {
+  console.warn('[Prisma] Connection error - attempting to reconnect');
+});
+
 if (process.env['NODE_ENV'] !== 'production') {
   globalForPrisma.prisma = prisma;
 }
