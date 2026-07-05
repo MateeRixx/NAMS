@@ -10,18 +10,7 @@ services:
     restart: unless-stopped
     ports:
       - '3000:3000'
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://neondb_owner:***REMOVED***@***REMOVED***.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-      REDIS_URL: rediss://default:***REMOVED***@square-coyote-110055.upstash.io:6379
-      JWT_SECRET: ***REMOVED***
-      PAYMENT_PROVIDER: razorpay
-      PAYMENT_KEY_ID: ***REMOVED***
-      PAYMENT_KEY_SECRET: ***REMOVED***
-      EMAIL_FROM: onboarding@resend.dev
-      EMAIL_PROVIDER: resend
-      RESEND_API_KEY: ***REMOVED***
-      EMAIL_API_KEY: ***REMOVED***
+    env_file: .env
     volumes:
       - ./apps/backend/src:/app/apps/backend/src
       - ./packages/shared/src:/app/packages/shared/src

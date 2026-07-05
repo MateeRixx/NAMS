@@ -1,7 +1,19 @@
 node_modules/
 dist/
+
+# Environment files (secrets)
 .env
 .env.local
+.env.development
+.env.production
+.env.staging
+apps/**/.env
+packages/**/.env
+
+# Docker local overrides (may contain secrets)
+docker-compose.override.yml
+docker-compose.dev.yml
+
 *.log
 .DS_Store
 *.tsbuildinfo
