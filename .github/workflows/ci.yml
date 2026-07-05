@@ -2,30 +2,82 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
 
-env:
-  NODE_VERSION: '20'
-  PNPM_VERSION: '8.15.0'
-  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/newsflow_test?schema=public
-  REDIS_URL: redis://localhost:6379
-  JWT_SECRET: test-jwt-secret-that-is-at-least-32-characters-long
-
 jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: newsflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm --filter=backend lint
+
+      - name: Run backend tests
+        run: pnpm --filter=backend test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/newsflow
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-jwt-secret-at-least-32-chars-long-for-testing
+
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
+
+      - uses: pnpm/action-setup@v4
         with:
-          version: ${{ env.PNPM_VERSION }}
+          version: 8
+
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 20
           cache: 'pnpm'
+
       - run: pnpm install --frozen-lockfile
-      - run: pnpm db:generate
-      - run: pnpm build
+
+      - name: Build backend
+        run: pnpm db:generate && pnpm --filter=backend build
+
+      - name: Build admin
+        run: pnpm --filter=admin build
+
+      - name: Build customer
+        run: pnpm --filter=customer build
