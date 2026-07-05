@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import ErrorBoundary from './ErrorBoundary';
+import PushNotificationManager from './PushNotificationManager';
+import { useUnreadNotifications } from '../hooks/useUnreadNotifications';
 import { useState, useCallback, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { lightImpact, mediumImpact } from '../utils/haptics';
@@ -93,6 +95,7 @@ export default function Layout() {
   const [showMore, setShowMore] = useState(false);
   const location = useLocation();
   const tr = t() as Record<string, string>;
+  const unreadCount = useUnreadNotifications();
 
   useEffect(() => {
     document.body.classList.toggle('is-native', isNative);
@@ -119,6 +122,7 @@ export default function Layout() {
 
   return (
     <div className="app-layout">
+      <PushNotificationManager />
       <header className="app-header">
         <h2>NewsFlow</h2>
         <div className="header-right">
@@ -138,6 +142,7 @@ export default function Layout() {
             >
               {tr[tab.key] || tab.label}
               {tab.to === '/cart' && itemCount > 0 ? ` (${itemCount})` : ''}
+              {tab.to === '/notifications' && unreadCount > 0 ? ` (${unreadCount})` : ''}
             </NavLink>
           ))}
         </nav>
@@ -181,13 +186,16 @@ export default function Layout() {
                 {tab.icon === 'home' && <HomeIcon />}
                 {tab.icon === 'grid' && <GridIcon />}
                 {tab.icon === 'clipboard' && <ClipboardIcon />}
-                {tab.icon === 'cart' && (
-                  <>
-                    <CartIcon />
-                    {itemCount > 0 && <span className="tab-bar-badge">{itemCount > 9 ? '9+' : itemCount}</span>}
-                  </>
-                )}
-                <span>{tr[tab.key] || tab.label}</span>
+                  {tab.icon === 'cart' && (
+                    <>
+                      <CartIcon />
+                      {itemCount > 0 && <span className="tab-bar-badge">{itemCount > 9 ? '9+' : itemCount}</span>}
+                    </>
+                  )}
+                  {tab.to === '/notifications' && unreadCount > 0 && (
+                    <span className="tab-bar-badge nav-alerts-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                  )}
+                  <span>{tr[tab.key] || tab.label}</span>
               </NavLink>
             );
           })}

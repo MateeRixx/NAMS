@@ -18,12 +18,11 @@ const envSchema = z.object({
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_BUCKET_NAME: z.string().optional(),
   R2_PUBLIC_URL: z.string().optional(),
-  FIREBASE_PROJECT_ID: z.string().optional(),
-  FIREBASE_CLIENT_EMAIL: z.string().optional(),
-  FIREBASE_PRIVATE_KEY: z.string().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('debug'),
   ADMIN_DASHBOARD_URL: z.string().default('http://localhost:3001'),
   MOBILE_APP_URL: z.string().default('http://localhost:3002'),
+  ALLOWED_ORIGINS: z.string().default(''),
+  CSP_CONNECT_SRC: z.string().default(''),
 
   EMAIL_FROM: z.string().default('onboarding@resend.dev'),
   EMAIL_PROVIDER: z.enum(['resend', 'smtp']).default('resend'),
@@ -35,7 +34,9 @@ const envSchema = z.object({
   WHATSAPP_AUTH_TOKEN: z.string().optional(),
   WHATSAPP_FROM_NUMBER: z.string().optional(),
 
-  FCM_SERVER_KEY: z.string().optional(),
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_EMAIL: z.string().default('mailto:admin@newsflow.app'),
 
   PAYMENT_PROVIDER: z.enum(['razorpay', 'mock']).default('mock'),
   PAYMENT_KEY_ID: z.string().optional(),

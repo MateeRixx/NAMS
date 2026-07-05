@@ -3,6 +3,7 @@ import type { Redis } from 'ioredis';
 import prisma from '@newsflow/database';
 import { getQueue } from '../config/queue.js';
 import { sendWhatsApp, isWhatsAppConfigured } from '../services/whatsapp.service.js';
+import { sendToCustomer } from '../services/push.service.js';
 
 export function startNotificationWorker(connection: Redis): Worker {
   const worker = new Worker(
@@ -80,10 +81,22 @@ export function startNotificationWorker(connection: Redis): Worker {
           });
         }
       } else if (channel === 'PUSH') {
-        console.log(`[NotificationWorker] PUSH channel not yet implemented`);
+        if (!customerId) {
+          console.warn(`[NotificationWorker] No customerId for PUSH notification ${notificationId}`);
+          await prisma.notification.update({
+            where: { id: notificationId },
+            data: { status: 'FAILED' },
+          });
+          return;
+        }
+        const sent = await sendToCustomer(customerId, {
+          title,
+          body: message,
+          data: { type, url: customerId ? '/notifications' : '/' },
+        });
         await prisma.notification.update({
           where: { id: notificationId },
-          data: { status: 'SENT', sentAt: new Date() },
+          data: { status: sent > 0 ? 'SENT' : 'FAILED', sentAt: new Date() },
         });
       }
     },

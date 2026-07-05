@@ -10,6 +10,9 @@ dist/
 apps/**/.env
 packages/**/.env
 
+# Auto-generated VAPID keys (contains private key)
+vapid-keys.json
+
 # Docker local overrides (may contain secrets)
 docker-compose.override.yml
 docker-compose.dev.yml

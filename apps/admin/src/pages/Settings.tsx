@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import client from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
+const roles = ['AGENCY_ADMIN', 'AGENCY_STAFF'] as const;
+
 interface Agency {
   id: string;
   name: string;
@@ -34,6 +36,9 @@ export default function Settings() {
   const [agency, setAgency] = useState<Agency | null>(null);
   const [staff, setStaff] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [addForm, setAddForm] = useState({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'AGENCY_STAFF' });
+  const [addLoading, setAddLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -183,6 +188,10 @@ export default function Settings() {
 
       {tab === 'staff' && (
         <div>
+          <div className="page-actions" style={{ marginBottom: '1rem' }}>
+            <button className="btn btn-primary" onClick={() => setShowAddStaff(true)}>+ Add Staff</button>
+          </div>
+
           {staff.length === 0 ? (
             <div className="empty">No staff users found</div>
           ) : (
@@ -210,6 +219,85 @@ export default function Settings() {
                 ))}
               </tbody>
             </table>
+          )}
+
+          {showAddStaff && (
+            <div className="modal-overlay" onClick={() => setShowAddStaff(false)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h2>Add Staff User</h2>
+                  <button className="modal-close" onClick={() => setShowAddStaff(false)}>&times;</button>
+                </div>
+                <div className="modal-body">
+                  <div className="form-group">
+                    <label>First Name</label>
+                    <input className="form-control" value={addForm.firstName} onChange={(e) => setAddForm({ ...addForm, firstName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Last Name</label>
+                    <input className="form-control" value={addForm.lastName} onChange={(e) => setAddForm({ ...addForm, lastName: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input className="form-control" type="email" value={addForm.email} onChange={(e) => setAddForm({ ...addForm, email: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label>Phone</label>
+                    <input className="form-control" type="tel" value={addForm.phone} onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })} />
+                  </div>
+                  <div className="form-group">
+                    <label>Password</label>
+                    <input className="form-control" type="text" value={addForm.password} onChange={(e) => setAddForm({ ...addForm, password: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label>Role</label>
+                    <select className="select" value={addForm.role} onChange={(e) => setAddForm({ ...addForm, role: e.target.value })}>
+                      {roles.map((r) => <option key={r} value={r}>{r.replace('_', ' ')}</option>)}
+                    </select>
+                  </div>
+                  {error && <div className="error-text">{error}</div>}
+                </div>
+                <div className="modal-footer">
+                  <button className="btn" onClick={() => setShowAddStaff(false)}>Cancel</button>
+                  <button className="btn btn-primary" disabled={addLoading} onClick={async () => {
+                    if (!addForm.firstName || !addForm.lastName || !addForm.password) {
+                      setError('Name and password are required');
+                      return;
+                    }
+                    if (!addForm.email && !addForm.phone) {
+                      setError('Either email or phone is required');
+                      return;
+                    }
+                    setAddLoading(true);
+                    setError('');
+                    try {
+                      const payload: Record<string, string> = {
+                        firstName: addForm.firstName,
+                        lastName: addForm.lastName,
+                        password: addForm.password,
+                        role: addForm.role,
+                        agencyId: user!.agencyId,
+                      };
+                      if (addForm.email) payload.email = addForm.email;
+                      if (addForm.phone) payload.phone = addForm.phone;
+                      await client.post('/auth/register', payload);
+                      setShowAddStaff(false);
+                      setAddForm({ firstName: '', lastName: '', email: '', phone: '', password: '', role: 'AGENCY_STAFF' });
+                      const usersRes = await client.get('/auth/users');
+                      setStaff(usersRes.data.data as StaffUser[]);
+                      setSuccess('Staff user created');
+                    } catch (err: unknown) {
+                      const msg = (err as { response?: { data?: { error?: { message?: string } } } })?.response?.data?.error?.message ?? 'Failed to create user';
+                      setError(msg);
+                    } finally {
+                      setAddLoading(false);
+                    }
+                  }}>
+                    {addLoading ? 'Creating...' : 'Create Staff'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

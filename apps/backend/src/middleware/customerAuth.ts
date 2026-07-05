@@ -32,7 +32,6 @@ export async function customerAuth(
       userId: customer.id,
       agencyId: customer.agencyId,
       role: UserRole.CUSTOMER,
-      firebaseUid: '',
     };
 
     next();

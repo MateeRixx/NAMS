@@ -31,7 +31,6 @@ async function main() {
       data: {
         agencyId: agency.id,
         email: adminEmail,
-        firebaseUid: 'dev-firebase-uid',
         password: passwordHash,
         firstName: 'Dev',
         lastName: 'Admin',
@@ -54,7 +53,6 @@ async function main() {
       data: {
         agencyId: agency.id,
         email: staffEmail,
-        firebaseUid: 'dev-staff-uid',
         password: passwordHash,
         firstName: 'Dev',
         lastName: 'Staff',

@@ -65,10 +65,18 @@ export default function Billing() {
     }
   }
 
-  function downloadPdf(id: string) {
-    const token = localStorage.getItem('token');
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-    window.open(`${base}/billing/invoices/${id}/pdf?token=${token}`, '_blank');
+  async function downloadPdf(id: string) {
+    try {
+      const res = await client.get(`/billing/invoices/${id}/pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${id}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setMsg('Failed to download PDF');
+    }
   }
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

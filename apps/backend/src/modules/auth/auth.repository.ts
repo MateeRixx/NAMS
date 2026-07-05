@@ -3,7 +3,6 @@ import prisma from '@newsflow/database';
 export interface CreateUserData {
   email?: string;
   phone?: string;
-  firebaseUid: string;
   firstName: string;
   lastName: string;
   role: string;
@@ -12,10 +11,6 @@ export interface CreateUserData {
 
 export async function createUser(data: CreateUserData) {
   return prisma.user.create({ data: data as never });
-}
-
-export async function findUserByFirebaseUid(firebaseUid: string) {
-  return prisma.user.findUnique({ where: { firebaseUid } });
 }
 
 export async function findUserById(id: string) {

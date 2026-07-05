@@ -6,7 +6,6 @@ export interface RegisterDto {
   password: string;
   firstName: string;
   lastName: string;
-  firebaseUid: string;
   agencyId: string;
 }
 
@@ -14,7 +13,6 @@ export interface LoginDto {
   email?: string;
   phone?: string;
   password?: string;
-  firebaseToken?: string;
 }
 
 export interface AuthResponse {

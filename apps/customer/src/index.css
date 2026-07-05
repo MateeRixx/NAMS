@@ -125,6 +125,16 @@ input, textarea, [contenteditable] {
   box-sizing: border-box;
 }
 .login-card input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.login-card .password-wrapper input { margin-bottom: 0; }
+.password-wrapper { position: relative; display: flex; align-items: center; margin-bottom: var(--space-3); }
+.password-wrapper input { padding-right: 2.5rem; }
+.password-toggle {
+  position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 0.25rem;
+  color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  line-height: 1; min-width: auto; min-height: auto;
+}
+.password-toggle:hover { color: var(--text); }
 
 /* ===== APP LAYOUT ===== */
 .app-layout { display: flex; flex-direction: column; min-height: 100vh; }
@@ -857,6 +867,30 @@ input, textarea, [contenteditable] {
   .card-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   }
+}
+
+/* ===== NOTIFICATION TOAST ===== */
+.notification-toast {
+  position: fixed;
+  top: var(--safe-area-top, 0);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--header-bg);
+  color: #fff;
+  padding: var(--space-3) var(--space-4);
+  padding-top: calc(var(--safe-area-top, 0px) + var(--space-3));
+  cursor: pointer;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: var(--shadow-lg);
+}
+.notification-toast strong { display: block; font-size: var(--text-sm); margin-bottom: 2px; }
+.notification-toast p { font-size: var(--text-xs); color: var(--text-light); margin: 0; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+.nav-alerts-badge {
+  top: -2px;
+  right: calc(50% - 18px);
 }
 
 /* ===== REDUCED MOTION ===== */

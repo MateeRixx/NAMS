@@ -23,26 +23,32 @@ import marketplaceRoutes from './modules/marketplace/marketplace.routes.js';
 import reportingRoutes from './modules/reporting/reporting.routes.js';
 import auditRoutes from './modules/audit/audit.routes.js';
 import paymentRoutes from './modules/payment/payment.routes.js';
+import pushRoutes from './modules/push/push.routes.js';
 
 const app: Express = express();
 
+const envOrigins = config.ALLOWED_ORIGINS
+  ? config.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+  : [];
 const allowedOrigins = [
   config.ADMIN_DASHBOARD_URL,
   config.MOBILE_APP_URL,
-  'http://localhost:3002',
-  'http://localhost:3003',
+  ...envOrigins,
   'capacitor://localhost',
   'http://localhost',
   'https://localhost',
-  'https://modernakhbaar.indevs.in',
 ];
+
+const cspExtra = config.CSP_CONNECT_SRC
+  ? config.CSP_CONNECT_SRC.split(',').map(s => s.trim()).filter(Boolean)
+  : [];
 
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", ...allowedOrigins.filter(o => o.startsWith('http')), 'http://192.168.1.35:3000', 'http://10.0.2.2:3000'],
+        connectSrc: ["'self'", ...allowedOrigins.filter(o => o.startsWith('http')), ...cspExtra],
         upgradeInsecureRequests: null,
       },
     },
@@ -54,7 +60,7 @@ app.use(
       if (!origin) return cb(null, true);
       if (allowedOrigins.includes(origin)) return cb(null, true);
       if (origin.endsWith('.vercel.app')) return cb(null, true);
-      console.warn(`CORS blocked origin: ${origin}`);
+      if (config.NODE_ENV === 'development') console.warn(`CORS blocked origin: ${origin}`);
       cb(null, false);
     },
     credentials: true,
@@ -81,17 +87,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 app.use(rateLimiter);
 
-app.get('/', (_req, res) => {
-  res.json({
-    success: true,
-    data: {
-      name: 'NewsFlow API',
-      version: '1.0.0',
-      environment: config.NODE_ENV,
-    },
-  });
-});
-
 app.use(config.API_PREFIX, healthRoutes);
 app.use(`${config.API_PREFIX}/auth`, authRoutes);
 app.use(`${config.API_PREFIX}/agencies`, agencyRoutes);
@@ -108,6 +103,7 @@ app.use(`${config.API_PREFIX}/marketplace`, marketplaceRoutes);
 app.use(`${config.API_PREFIX}/reports`, reportingRoutes);
 app.use(`${config.API_PREFIX}/audit-logs`, auditRoutes);
 app.use(`${config.API_PREFIX}/payments`, paymentRoutes);
+app.use(`${config.API_PREFIX}/push`, pushRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

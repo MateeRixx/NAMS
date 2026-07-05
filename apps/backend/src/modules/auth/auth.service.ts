@@ -30,11 +30,6 @@ function generateToken(payload: JwtPayload): string {
 }
 
 export async function register(dto: RegisterDto): Promise<AuthResponse> {
-  const existingUser = await authRepository.findUserByFirebaseUid(dto.firebaseUid);
-  if (existingUser) {
-    throw new ConflictError('User already registered with this Firebase account');
-  }
-
   if (dto.email) {
     const emailUser = await authRepository.findUserByEmail(dto.email);
     if (emailUser) {
@@ -52,7 +47,6 @@ export async function register(dto: RegisterDto): Promise<AuthResponse> {
   const user = await authRepository.createUser({
     email: dto.email,
     phone: dto.phone,
-    firebaseUid: dto.firebaseUid,
     firstName: dto.firstName,
     lastName: dto.lastName,
     role: UserRole.AGENCY_STAFF,
@@ -131,7 +125,7 @@ export async function sendOtp(phone: string): Promise<void> {
   await redis.set(`otp:${phone}`, otp, 'EX', 300);
   await redis.publish('otp', JSON.stringify({ phone, otp }));
 
-  console.log(`[DEV] OTP for ${phone}: ${otp}`);
+  if (config.NODE_ENV === 'development') console.log(`[DEV] OTP for ${phone}: ${otp}`);
 }
 
 export async function sendEmailOtp(email: string): Promise<void> {
@@ -153,7 +147,7 @@ export async function sendEmailOtp(email: string): Promise<void> {
   `;
 
   await sendEmail({ to: email, subject: 'Your NewsFlow OTP', html });
-  console.log(`[DEV] Email OTP for ${email}: ${otp}`);
+  if (config.NODE_ENV === 'development') console.log(`[DEV] Email OTP for ${email}: ${otp}`);
 }
 
 export async function verifyOtp(phone: string, otp: string): Promise<AuthResponse> {
@@ -239,7 +233,7 @@ export async function customerRegister(dto: CustomerRegisterDto): Promise<{ mess
   `;
 
   await sendEmail({ to: dto.email, subject: 'Verify your NewsFlow email', html });
-  console.log(`[DEV] Email OTP for ${dto.email}: ${otp}`);
+  if (config.NODE_ENV === 'development') console.log(`[DEV] Email OTP for ${dto.email}: ${otp}`);
 
   if (config.NODE_ENV === 'development') {
     return { message: `Account created. Your OTP is ${otp} (dev mode)`, otp };
@@ -363,7 +357,7 @@ export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Pr
   `;
 
   await sendEmail({ to: dto.email, subject: 'Reset your NewsFlow password', html });
-  console.log(`[DEV] Reset OTP for ${dto.email}: ${otp}`);
+  if (config.NODE_ENV === 'development') console.log(`[DEV] Reset OTP for ${dto.email}: ${otp}`);
 
   if (config.NODE_ENV === 'development') {
     return { message: `If an account exists, OTP ${otp} has been sent (dev mode)`, otp };

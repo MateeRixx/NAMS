@@ -63,6 +63,15 @@ input, textarea, [contenteditable] {
 .login-card input { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
 .login-card .hint { font-size: 0.8rem; color: var(--text-muted); margin: 0.5rem 0; }
 .login-card .error { color: var(--danger); font-size: 0.85rem; margin: 0.5rem 0; }
+.password-wrapper { position: relative; display: flex; align-items: center; }
+.password-wrapper input { padding-right: 2.5rem; }
+.password-toggle {
+  position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; padding: 0.25rem;
+  color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  line-height: 1; min-width: auto; min-height: auto;
+}
+.password-toggle:hover { color: var(--text); }
 
 .app-layout { display: flex; min-height: 100vh; }
 

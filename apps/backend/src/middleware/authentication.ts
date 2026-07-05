@@ -4,7 +4,6 @@ import { AuthenticationError, UserRole } from '@newsflow/shared';
 import type { JwtPayload } from '@newsflow/shared';
 import prisma from '@newsflow/database';
 import { config } from '../config/index.js';
-import { isFirebaseConfigured, verifyFirebaseToken } from '../config/firebase.js';
 
 function mapRole(role: string): UserRole {
   if (Object.values(UserRole).includes(role as UserRole)) {
@@ -26,49 +25,25 @@ export async function authentication(
     }
 
     const token = authHeader.slice(7);
+    const payload = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
 
-    if (isFirebaseConfigured()) {
-      const decodedToken = await verifyFirebaseToken(token);
-      const user = await prisma.user.findUnique({
-        where: { firebaseUid: decodedToken.uid },
-      });
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    });
 
-      if (!user) {
-        throw new AuthenticationError('User not found');
-      }
-
-      if (!user.isActive) {
-        throw new AuthenticationError('Account is disabled');
-      }
-
-      req.user = {
-        userId: user.id,
-        agencyId: user.agencyId,
-        role: mapRole(user.role),
-        firebaseUid: user.firebaseUid,
-      };
-    } else {
-      const payload = jwt.verify(token, config.JWT_SECRET) as JwtPayload;
-
-      const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
-      });
-
-      if (!user) {
-        throw new AuthenticationError('User not found');
-      }
-
-      if (!user.isActive) {
-        throw new AuthenticationError('Account is disabled');
-      }
-
-      req.user = {
-        userId: user.id,
-        agencyId: user.agencyId,
-        role: mapRole(user.role),
-        firebaseUid: user.firebaseUid,
-      };
+    if (!user) {
+      throw new AuthenticationError('User not found');
     }
+
+    if (!user.isActive) {
+      throw new AuthenticationError('Account is disabled');
+    }
+
+    req.user = {
+      userId: user.id,
+      agencyId: user.agencyId,
+      role: mapRole(user.role),
+    };
 
     next();
   } catch (error) {
