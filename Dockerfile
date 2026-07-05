@@ -16,7 +16,7 @@ CMD ["sh", "-c", "pnpm --filter=database db:push && pnpm dev"]
 
 FROM base AS builder
 COPY . .
-RUN pnpm db:generate && pnpm build
+RUN pnpm db:generate && pnpm --filter=backend build
 
 FROM node:20-slim AS production
 RUN apt-get update -y && apt-get install -y openssl --no-install-recommends && rm -rf /var/lib/apt/lists/*
