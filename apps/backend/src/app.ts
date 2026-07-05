@@ -26,12 +26,23 @@ import paymentRoutes from './modules/payment/payment.routes.js';
 
 const app: Express = express();
 
+const allowedOrigins = [
+  config.ADMIN_DASHBOARD_URL,
+  config.MOBILE_APP_URL,
+  'http://localhost:3002',
+  'http://localhost:3003',
+  'capacitor://localhost',
+  'http://localhost',
+  'https://localhost',
+  'https://modernakhbaar.indevs.in',
+];
+
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", 'http://192.168.1.35:3000', 'http://localhost:3000', 'http://10.0.2.2:3000'],
+        connectSrc: ["'self'", ...allowedOrigins.filter(o => o.startsWith('http')), 'http://192.168.1.35:3000', 'http://10.0.2.2:3000'],
         upgradeInsecureRequests: null,
       },
     },
@@ -39,7 +50,13 @@ app.use(
 );
 app.use(
   cors({
-    origin: [config.ADMIN_DASHBOARD_URL, config.MOBILE_APP_URL, 'http://localhost:3002', 'http://localhost:3003', 'capacitor://localhost', 'http://localhost', 'https://localhost'],
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (origin.endsWith('.vercel.app')) return cb(null, true);
+      console.warn(`CORS blocked origin: ${origin}`);
+      cb(null, false);
+    },
     credentials: true,
   })
 );
