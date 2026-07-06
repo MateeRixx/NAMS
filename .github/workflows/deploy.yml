@@ -12,24 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Write SSH key
-        env:
-          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/ec2_key
-          chmod 600 ~/.ssh/ec2_key
-
-      - name: Add EC2 host key
-        run: |
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-
       - name: Deploy via SSH
-        run: |
-          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
             cd ~/NAMS
             git pull
             docker compose -f docker-compose.prod.yml up -d --build backend
             docker compose -f docker-compose.prod.yml exec -T backend npx prisma db push --accept-data-loss 2>/dev/null || true
             docker image prune -f
-          "
