@@ -223,7 +223,7 @@ export async function checkoutCart(
   const paymentNumber = paymentInfo ? await getNextPaymentNumber(agencyId) : null;
 
   const result = await prisma.$transaction(async (tx) => {
-    const subs = [];
+    const subs: { id: string; productId: string }[] = [];
     for (const item of items) {
       const product = productMap.get(item.productId)!;
       const startDate = item.startDate ? new Date(item.startDate) : now;
@@ -264,7 +264,7 @@ export async function checkoutCart(
       });
     }
 
-    let payment = null;
+    let payment: { id: string; amount: { toString: () => string } } | null = null;
     if (paymentInfo) {
       payment = await tx.payment.create({
         data: {
