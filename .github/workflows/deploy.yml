@@ -17,7 +17,7 @@ jobs:
           SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/ec2_key
+          printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
 
       - name: Add EC2 host key
