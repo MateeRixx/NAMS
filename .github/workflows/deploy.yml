@@ -13,11 +13,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Write SSH key
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
-          cat > ~/.ssh/ec2_key << 'KEYEOF'
-${{ secrets.EC2_SSH_KEY }}
-KEYEOF
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
 
       - name: Add EC2 host key
