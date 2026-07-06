@@ -9,6 +9,8 @@ import { calcProductCost } from './subscription.service.js';
 
 const TAX_RATE = 0.18;
 
+interface CartProduct { id: string; name: string; basePrice: { toString(): string }; dayRates?: { dayOfWeek: number; price: { toString(): string } }[] }
+
 export async function estimateCart(
   customerId: string,
   agencyId: string,
@@ -58,7 +60,7 @@ export async function estimateCart(
   }
 
   const now = new Date();
-  const productMap = new Map(products.map((p) => [p.id, p]));
+  const productMap = new Map<string, CartProduct>(products.map((p) => [p.id, p as unknown as CartProduct]));
   const cartItems: {
     productId: string;
     productName: string;
@@ -156,7 +158,7 @@ export async function checkoutCart(
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
-  const productMap = new Map(products.map((p) => [p.id, p]));
+  const productMap = new Map<string, CartProduct>(products.map((p) => [p.id, p as unknown as CartProduct]));
   const invoiceItems: {
     productId: string | null;
     description: string;
