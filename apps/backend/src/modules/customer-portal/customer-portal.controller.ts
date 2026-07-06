@@ -220,6 +220,7 @@ export async function createAddress(
         city: string;
         state: string;
         postalCode: string;
+        zoneId?: string;
         isPrimary?: boolean;
       }
     );
@@ -248,6 +249,7 @@ export async function updateAddress(
         city?: string;
         state?: string;
         postalCode?: string;
+        zoneId?: string | null;
         isPrimary?: boolean;
       }
     );
@@ -388,7 +390,7 @@ export async function createMyDistributionRequest(
     const result = await reqService.createMyDistributionRequest(
       req.user!.userId,
       req.user!.agencyId,
-      req.body as { title: string; description?: string; requestedQuantity: number; zones?: { deliveryZoneId: string; quantity: number }[] }
+      req.body as { title: string; description?: string; requestedQuantity: number; deliveryAddressId?: string; contactPerson?: string; contactPhone?: string; scheduledDate?: string; zones?: { deliveryZoneId: string; quantity: number }[] }
     );
     res.status(201).json({ success: true, data: result });
   } catch (error) {

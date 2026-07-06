@@ -16,6 +16,7 @@ interface Estimate {
   items: { productId: string; productName: string; billableDays: number; unitPrice: number; amount: number; startDate: string }[];
   subtotal: number;
   deliveryCharges: number;
+  billingCharges: number;
   taxAmount: number;
   totalAmount: number;
 }
@@ -196,7 +197,7 @@ export default function Cart() {
 
           <div className="flex justify-between items-center mb-2">
             <h3 style={{ margin: 0 }}>{tr.cart_first_month}</h3>
-            <span className="text-xs text-muted">{tr.cart_full_month} ₹{(estimate.subtotal + estimate.deliveryCharges + estimate.taxAmount).toFixed(2)}</span>
+            <span className="text-xs text-muted">{tr.cart_full_month} ₹{(estimate.subtotal + estimate.deliveryCharges + estimate.billingCharges + estimate.taxAmount).toFixed(2)}</span>
           </div>
           <div className="card-section">
             {estimate.items.map((ei) => (
@@ -213,6 +214,12 @@ export default function Cart() {
               <span>{tr.cart_delivery}</span>
               <span className="font-medium">₹{estimate.deliveryCharges.toFixed(2)}</span>
             </div>
+            {estimate.billingCharges > 0 && (
+              <div className="flex justify-between text-sm" style={{ padding: '0.25rem 0' }}>
+                <span>{tr.cart_charges}</span>
+                <span className="font-medium">₹{estimate.billingCharges.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm" style={{ padding: '0.25rem 0' }}>
               <span>{tr.cart_gst}</span>
               <span className="font-medium">₹{estimate.taxAmount.toFixed(2)}</span>

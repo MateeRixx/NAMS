@@ -20,6 +20,7 @@ function toComplaintResponse(c: {
   id: string;
   agencyId: string;
   customerId: string;
+  customer?: { id: string; firstName: string; lastName: string; email: string | null; phone: string | null; customerCode: string } | null;
   subscriptionId: string | null;
   complaintNumber: string;
   type: string;
@@ -34,6 +35,7 @@ function toComplaintResponse(c: {
     id: c.id,
     agencyId: c.agencyId,
     customerId: c.customerId,
+    customer: c.customer ? { id: c.customer.id, firstName: c.customer.firstName, lastName: c.customer.lastName, email: c.customer.email, phone: c.customer.phone, customerCode: c.customer.customerCode } : null,
     subscriptionId: c.subscriptionId,
     complaintNumber: c.complaintNumber,
     type: c.type,

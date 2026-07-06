@@ -17,7 +17,7 @@ export async function createComplaint(data: any) {
 export async function findComplaintById(id: string, agencyId: string) {
   return prisma.complaint.findFirst({
     where: { id, agencyId },
-    include: { history: { orderBy: { createdAt: 'asc' } } },
+    include: { history: { orderBy: { createdAt: 'asc' } }, customer: true },
   });
 }
 
@@ -41,7 +41,7 @@ export async function listComplaints(agencyId: string) {
   return prisma.complaint.findMany({
     where: { agencyId },
     orderBy: { createdAt: 'desc' },
-    include: { history: { orderBy: { createdAt: 'asc' } } },
+    include: { history: { orderBy: { createdAt: 'asc' } }, customer: true },
   });
 }
 

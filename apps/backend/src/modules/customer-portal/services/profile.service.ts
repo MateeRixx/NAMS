@@ -87,6 +87,7 @@ export async function createAddress(
     city: string;
     state: string;
     postalCode: string;
+    zoneId?: string;
     isPrimary?: boolean;
   }
 ): Promise<{ id: string }> {
@@ -106,6 +107,7 @@ export async function createAddress(
       city: data.city,
       state: data.state,
       postalCode: data.postalCode,
+      zoneId: data.zoneId ?? null,
       isPrimary: data.isPrimary ?? false,
     },
   });
@@ -132,6 +134,7 @@ export async function updateAddress(
     city?: string;
     state?: string;
     postalCode?: string;
+    zoneId?: string | null;
     isPrimary?: boolean;
   }
 ): Promise<{ id: string }> {
@@ -150,6 +153,7 @@ export async function updateAddress(
       ...(data.city !== undefined && { city: data.city }),
       ...(data.state !== undefined && { state: data.state }),
       ...(data.postalCode !== undefined && { postalCode: data.postalCode }),
+      ...(data.zoneId !== undefined && { zoneId: data.zoneId }),
       ...(data.isPrimary !== undefined && { isPrimary: data.isPrimary }),
     },
   });

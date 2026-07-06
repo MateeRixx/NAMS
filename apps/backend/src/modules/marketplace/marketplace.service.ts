@@ -35,6 +35,11 @@ function toDistributionResponse(d: {
   title: string;
   description: string | null;
   requestedQuantity: number;
+  deliveryAddressId: string | null;
+  deliveryAddress?: { id: string; houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  contactPerson: string | null;
+  contactPhone: string | null;
+  scheduledDate: Date | null;
   quotedPrice: unknown;
   status: string;
   createdAt: Date;
@@ -48,6 +53,11 @@ function toDistributionResponse(d: {
     title: d.title,
     description: d.description,
     requestedQuantity: d.requestedQuantity,
+    deliveryAddressId: d.deliveryAddressId,
+    deliveryAddress: d.deliveryAddress,
+    contactPerson: d.contactPerson,
+    contactPhone: d.contactPhone,
+    scheduledDate: d.scheduledDate,
     quotedPrice: d.quotedPrice != null ? Number(d.quotedPrice) : null,
     status: d.status,
     createdAt: d.createdAt,

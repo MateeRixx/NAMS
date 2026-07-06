@@ -4,6 +4,7 @@ import client from '../api/client';
 interface Complaint {
   id: string;
   customerId: string;
+  customer?: { firstName: string; lastName: string; email?: string; phone?: string; customerCode?: string } | null;
   type: string;
   description: string;
   status: string;
@@ -101,6 +102,7 @@ export default function Complaints() {
         <table className="table">
           <thead>
             <tr>
+              <th>Customer</th>
               <th>Type</th>
               <th>Description</th>
               <th>Status</th>
@@ -116,6 +118,7 @@ export default function Complaints() {
               return (
                 <>
                   <tr key={c.id}>
+                    <td>{c.customer ? `${c.customer.firstName} ${c.customer.lastName}` : c.customerId.slice(0, 8)}</td>
                     <td><span className="badge">{c.type.replace(/_/g, ' ')}</span></td>
                     <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description}</td>
                     <td>
@@ -147,7 +150,7 @@ export default function Complaints() {
                   </tr>
                   {expanded === c.id && (
                     <tr key={`${c.id}-tl`}>
-                      <td colSpan={7}>
+                      <td colSpan={8}>
                         <div className="timeline">
                           {c.history.length === 0 ? (
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem' }}>No history recorded</p>

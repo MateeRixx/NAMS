@@ -7,9 +7,15 @@ export async function listNotifications(
   next: NextFunction
 ): Promise<void> {
   try {
+    const limit = req.query['limit'] ? parseInt(req.query['limit'] as string, 10) : 50;
+    const offset = req.query['offset'] ? parseInt(req.query['offset'] as string, 10) : 0;
+    const channel = req.query['channel'] as string | undefined;
+    const area = req.query['area'] as string | undefined;
+    const zoneId = req.query['zoneId'] as string | undefined;
     const result = await notificationService.listNotifications(
       req.user!.agencyId,
-      req.user!.role === 'CUSTOMER' ? req.user!.userId : undefined
+      req.user!.role === 'CUSTOMER' ? req.user!.userId : undefined,
+      { limit, offset, channel, area, zoneId }
     );
     res.json({ success: true, data: result });
   } catch (error) {

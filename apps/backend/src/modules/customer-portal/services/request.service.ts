@@ -11,14 +11,17 @@ export async function listMyDistributionRequests(customerId: string, agencyId: s
   return prisma.distributionRequest.findMany({
     where: { customerId, agencyId },
     orderBy: { createdAt: 'desc' },
-    include: { zones: { include: { deliveryZone: { select: { id: true, name: true } } } } },
+    include: {
+      zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
+      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+    },
   });
 }
 
 export async function createMyDistributionRequest(
   customerId: string,
   agencyId: string,
-  data: { title: string; description?: string; requestedQuantity: number; zones?: { deliveryZoneId: string; quantity: number }[] }
+  data: { title: string; description?: string; requestedQuantity: number; deliveryAddressId?: string; contactPerson?: string; contactPhone?: string; scheduledDate?: string; zones?: { deliveryZoneId: string; quantity: number }[] }
 ) {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
@@ -32,6 +35,10 @@ export async function createMyDistributionRequest(
       title: data.title,
       description: data.description ?? null,
       requestedQuantity: data.requestedQuantity,
+      deliveryAddressId: data.deliveryAddressId ?? null,
+      contactPerson: data.contactPerson ?? null,
+      contactPhone: data.contactPhone ?? null,
+      scheduledDate: data.scheduledDate ? new Date(data.scheduledDate) : null,
       status: 'PENDING',
       zones: data.zones
         ? {
@@ -42,7 +49,10 @@ export async function createMyDistributionRequest(
           }
         : undefined,
     },
-    include: { zones: { include: { deliveryZone: { select: { id: true, name: true } } } } },
+    include: {
+      zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
+      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+    },
   });
 
   if (customer.email) {

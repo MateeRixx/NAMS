@@ -8,6 +8,10 @@ export interface CreateDistributionRequestDto {
   title: string;
   description?: string;
   requestedQuantity: number;
+  deliveryAddressId?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  scheduledDate?: string;
   zones?: ZoneQuantity[];
 }
 
@@ -23,6 +27,11 @@ export interface DistributionRequestResponse {
   title: string;
   description: string | null;
   requestedQuantity: number;
+  deliveryAddressId: string | null;
+  deliveryAddress?: { id: string; houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  contactPerson: string | null;
+  contactPhone: string | null;
+  scheduledDate: Date | null;
   quotedPrice: number | null;
   status: string;
   createdAt: Date;

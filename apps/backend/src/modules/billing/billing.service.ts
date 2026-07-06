@@ -547,6 +547,24 @@ export async function generateCancellationInvoice(
     return null;
   }
 
+  const productSubtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
+  const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
+  for (const charge of activeCharges) {
+    const chargeAmount =
+      charge.type === 'PERCENTAGE'
+        ? Math.round(productSubtotal * (Number(charge.amount.toString()) / 100) * 100) / 100
+        : Math.round(Number(charge.amount.toString()) * 100) / 100;
+    if (chargeAmount > 0) {
+      invoiceItems.push({
+        productId: null,
+        description: charge.name,
+        quantity: 1,
+        unitPrice: chargeAmount,
+        amount: chargeAmount,
+      });
+    }
+  }
+
   const subtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
 
   const deliveryZone = await billingRepository.findPrimaryAddressZone(customerId, agencyId);

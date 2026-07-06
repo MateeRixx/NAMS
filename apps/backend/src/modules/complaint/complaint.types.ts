@@ -15,6 +15,14 @@ export interface ComplaintResponse {
   id: string;
   agencyId: string;
   customerId: string;
+  customer?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+    phone: string | null;
+    customerCode: string;
+  } | null;
   subscriptionId: string | null;
   complaintNumber: string;
   type: string;

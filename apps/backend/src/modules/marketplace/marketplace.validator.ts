@@ -5,6 +5,10 @@ export const createDistributionRequestSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(1000).optional(),
   requestedQuantity: z.number().int().positive(),
+  deliveryAddressId: z.string().uuid().optional(),
+  contactPerson: z.string().max(100).optional(),
+  contactPhone: z.string().max(20).optional(),
+  scheduledDate: z.string().datetime().optional(),
   zones: z
     .array(
       z.object({

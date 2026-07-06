@@ -9,10 +9,17 @@ export async function findNotificationById(id: string, agencyId: string) {
 export async function listNotifications(
   agencyId: string,
   customerId?: string,
-  options?: { limit?: number; offset?: number }
+  options?: { limit?: number; offset?: number; channel?: string; area?: string; zoneId?: string }
 ) {
   const where: Record<string, unknown> = { agencyId };
   if (customerId) where['customerId'] = customerId;
+  if (options?.channel) where['channel'] = options.channel;
+  const addressFilter: Record<string, string> = {};
+  if (options?.area) addressFilter['area'] = options.area;
+  if (options?.zoneId) addressFilter['zoneId'] = options.zoneId;
+  if (Object.keys(addressFilter).length > 0) {
+    where['customer'] = { addresses: { some: addressFilter } };
+  }
 
   const [notifications, total] = await Promise.all([
     prisma.notification.findMany({

@@ -3,6 +3,8 @@ import client from '../api/client';
 
 interface DeliveryZone { id: string; name: string; }
 
+interface Address { id: string; houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string; isPrimary: boolean; zone?: { name: string } | null; }
+
 interface DistZone {
   id: string;
   deliveryZoneId: string;
@@ -15,6 +17,10 @@ interface DistributionRequest {
   title: string;
   description: string | null;
   requestedQuantity: number;
+  deliveryAddress?: { houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  contactPerson: string | null;
+  contactPhone: string | null;
+  scheduledDate: string | null;
   quotedPrice: number | null;
   status: string;
   createdAt: string;
@@ -58,11 +64,16 @@ export default function Marketplace() {
   const [articleRequests, setArticleRequests] = useState<ArticleRequest[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [showDistForm, setShowDistForm] = useState(false);
   const [distTitle, setDistTitle] = useState('');
   const [distDescription, setDistDescription] = useState('');
+  const [distAddressId, setDistAddressId] = useState('');
+  const [distContactPerson, setDistContactPerson] = useState('');
+  const [distContactPhone, setDistContactPhone] = useState('');
+  const [distScheduledDate, setDistScheduledDate] = useState('');
   const [zoneQty, setZoneQty] = useState<Record<string, number>>({});
   const [distSubmitting, setDistSubmitting] = useState(false);
   const [distError, setDistError] = useState('');
@@ -80,16 +91,18 @@ export default function Marketplace() {
   async function load() {
     setLoading(true);
     try {
-      const [distRes, articleRes, prodRes, zoneRes] = await Promise.all([
+      const [distRes, articleRes, prodRes, zoneRes, addrRes] = await Promise.all([
         client.get('/customer-portal/distribution-requests'),
         client.get('/customer-portal/article-requests'),
         client.get('/customer-portal/products'),
         client.get('/customer-portal/delivery-zones'),
+        client.get('/customer-portal/addresses'),
       ]);
       setDistRequests(distRes.data.data);
       setArticleRequests(articleRes.data.data);
       setProducts(prodRes.data.data);
       setZones(zoneRes.data.data);
+      setAddresses(addrRes.data.data);
     } finally {
       setLoading(false);
     }
@@ -101,6 +114,10 @@ export default function Marketplace() {
     setShowDistForm(false);
     setDistTitle('');
     setDistDescription('');
+    setDistAddressId('');
+    setDistContactPerson('');
+    setDistContactPhone('');
+    setDistScheduledDate('');
     setZoneQty({});
     setDistError('');
   }
@@ -118,6 +135,10 @@ export default function Marketplace() {
         title: distTitle,
         description: distDescription || undefined,
         requestedQuantity: totalQuantity,
+        deliveryAddressId: distAddressId || undefined,
+        contactPerson: distContactPerson || undefined,
+        contactPhone: distContactPhone || undefined,
+        scheduledDate: distScheduledDate ? new Date(distScheduledDate).toISOString() : undefined,
         zones: zonesArr,
       });
       resetDistForm();
@@ -210,6 +231,31 @@ export default function Marketplace() {
                   </div>
                 )}
               </div>
+              <div className="input-group">
+                <label>Delivery Address</label>
+                <select className="select" value={distAddressId} onChange={(e) => setDistAddressId(e.target.value)}>
+                  <option value="">-- Select Address --</option>
+                  {addresses.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.houseNumber}, {a.area}, {a.city} {a.zone ? `(${a.zone.name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Contact Person</label>
+                  <input className="input" placeholder="Name" value={distContactPerson} onChange={(e) => setDistContactPerson(e.target.value)} />
+                </div>
+                <div className="input-group" style={{ flex: 1 }}>
+                  <label>Contact Phone</label>
+                  <input className="input" placeholder="Phone" value={distContactPhone} onChange={(e) => setDistContactPhone(e.target.value)} />
+                </div>
+              </div>
+              <div className="input-group">
+                <label>Scheduled Date</label>
+                <input className="input" type="date" value={distScheduledDate} onChange={(e) => setDistScheduledDate(e.target.value)} />
+              </div>
               <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Total: {totalQuantity} pamphlets</p>
               {distError && <p className="error-text">{distError}</p>}
               <button className="btn btn-primary btn-block" onClick={handleCreateDist} disabled={distSubmitting}>
@@ -249,6 +295,14 @@ export default function Marketplace() {
                     </div>
                   )}
                   {d.description && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{d.description}</p>}
+                  {(d.contactPerson || d.contactPhone || d.scheduledDate || d.deliveryAddress) && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
+                      {d.contactPerson && <span>Contact: {d.contactPerson} </span>}
+                      {d.contactPhone && <span>&middot; {d.contactPhone} </span>}
+                      {d.scheduledDate && <span>&middot; Schedule: {new Date(d.scheduledDate).toLocaleDateString()}</span>}
+                      {d.deliveryAddress && <span>&middot; {d.deliveryAddress.houseNumber}, {d.deliveryAddress.area}, {d.deliveryAddress.city}</span>}
+                    </div>
+                  )}
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                     {new Date(d.createdAt).toLocaleDateString()}
                   </div>

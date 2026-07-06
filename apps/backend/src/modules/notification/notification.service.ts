@@ -27,11 +27,13 @@ function toResponse(n: {
 
 export async function listNotifications(
   agencyId: string,
-  customerId?: string
+  customerId?: string,
+  options?: { limit?: number; offset?: number; channel?: string; area?: string; zoneId?: string }
 ): Promise<NotificationListResponse> {
   const { notifications, total } = await notificationRepository.listNotifications(
     agencyId,
-    customerId
+    customerId,
+    options
   );
   return {
     notifications: notifications.map(toResponse),

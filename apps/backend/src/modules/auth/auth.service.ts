@@ -146,7 +146,10 @@ export async function sendEmailOtp(email: string): Promise<void> {
     </div>
   `;
 
-  await sendEmail({ to: email, subject: 'Your NewsFlow OTP', html });
+  const sent = await sendEmail({ to: email, subject: 'Your NewsFlow OTP', html });
+  if (!sent) {
+    console.error(`[AuthService] Failed to send OTP email to ${email}`);
+  }
   if (config.NODE_ENV === 'development') console.log(`[DEV] Email OTP for ${email}: ${otp}`);
 }
 
@@ -232,7 +235,10 @@ export async function customerRegister(dto: CustomerRegisterDto): Promise<{ mess
     </div>
   `;
 
-  await sendEmail({ to: dto.email, subject: 'Verify your NewsFlow email', html });
+  const sent = await sendEmail({ to: dto.email, subject: 'Verify your NewsFlow email', html });
+  if (!sent) {
+    console.error(`[AuthService] Failed to send verification OTP email to ${dto.email}`);
+  }
   if (config.NODE_ENV === 'development') console.log(`[DEV] Email OTP for ${dto.email}: ${otp}`);
 
   if (config.NODE_ENV === 'development') {
@@ -356,7 +362,10 @@ export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Pr
     </div>
   `;
 
-  await sendEmail({ to: dto.email, subject: 'Reset your NewsFlow password', html });
+  const sent = await sendEmail({ to: dto.email, subject: 'Reset your NewsFlow password', html });
+  if (!sent) {
+    console.error(`[AuthService] Failed to send reset OTP email to ${dto.email}`);
+  }
   if (config.NODE_ENV === 'development') console.log(`[DEV] Reset OTP for ${dto.email}: ${otp}`);
 
   if (config.NODE_ENV === 'development') {

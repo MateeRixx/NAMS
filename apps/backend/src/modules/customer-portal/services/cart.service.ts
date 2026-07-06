@@ -2,6 +2,7 @@ import { NotFoundError, ConflictError, ValidationError } from '@newsflow/shared'
 import prisma from '@newsflow/database';
 import { createAndQueueNotification } from '../../../services/notification.service.js';
 import * as billingRepository from '../../billing/billing.repository.js';
+import * as billingChargeRepository from '../../billing-charge/billing-charge.repository.js';
 import { getNextPaymentNumber } from '../../payment/payment.repository.js';
 import { logAudit } from '../../../services/audit.service.js';
 import { calcProductCost } from './subscription.service.js';
@@ -16,6 +17,7 @@ export async function estimateCart(
   items: { productId: string; productName: string; billableDays: number; unitPrice: number; amount: number; startDate: string }[];
   subtotal: number;
   deliveryCharges: number;
+  billingCharges: number;
   taxAmount: number;
   totalAmount: number;
 }> {
@@ -61,11 +63,22 @@ export async function estimateCart(
   const address = await prisma.address.findFirst({ where: { customerId, agencyId, isPrimary: true }, include: { deliveryZone: true } });
   const deliveryCharges = address?.deliveryZone ? Math.round(Number(address.deliveryZone.monthlyCharge.toString()) * 100) / 100 : 0;
 
-  const taxableAmount = subtotal + deliveryCharges;
+  let billingCharges = 0;
+  const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
+  for (const charge of activeCharges) {
+    if (charge.type === 'PERCENTAGE') {
+      billingCharges += Math.round(subtotal * (Number(charge.amount.toString()) / 100) * 100) / 100;
+    } else {
+      billingCharges += Math.round(Number(charge.amount.toString()) * 100) / 100;
+    }
+  }
+  billingCharges = Math.round(billingCharges * 100) / 100;
+
+  const taxableAmount = subtotal + deliveryCharges + billingCharges;
   const taxAmount = Math.round(taxableAmount * TAX_RATE * 100) / 100;
   const totalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
 
-  return { items: cartItems, subtotal, deliveryCharges, taxAmount, totalAmount };
+  return { items: cartItems, subtotal, deliveryCharges, billingCharges, taxAmount, totalAmount };
 }
 
 export async function checkoutCart(
@@ -123,7 +136,29 @@ export async function checkoutCart(
 
   const address = await prisma.address.findFirst({ where: { customerId, agencyId, isPrimary: true }, include: { deliveryZone: true } });
   const deliveryCharges = address?.deliveryZone ? Math.round(Number(address.deliveryZone.monthlyCharge.toString()) * 100) / 100 : 0;
-  const taxableAmount = subtotal + deliveryCharges;
+
+  let billingCharges = 0;
+  const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
+  for (const charge of activeCharges) {
+    if (charge.type === 'PERCENTAGE') {
+      billingCharges += Math.round(subtotal * (Number(charge.amount.toString()) / 100) * 100) / 100;
+    } else {
+      billingCharges += Math.round(Number(charge.amount.toString()) * 100) / 100;
+    }
+  }
+  billingCharges = Math.round(billingCharges * 100) / 100;
+
+  if (billingCharges > 0) {
+    invoiceItems.push({
+      productId: null,
+      description: `Additional Charges (${activeCharges.map((c) => c.name).join(', ')})`,
+      quantity: 1,
+      unitPrice: billingCharges,
+      amount: billingCharges,
+    });
+  }
+
+  const taxableAmount = subtotal + deliveryCharges + billingCharges;
   const taxAmount = Math.round(taxableAmount * TAX_RATE * 100) / 100;
   const totalAmount = Math.round((taxableAmount + taxAmount) * 100) / 100;
 

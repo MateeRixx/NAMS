@@ -24,6 +24,7 @@ const en: Translations = {
   cart_days_left: 'day{s} left this month',
   cart_subtotal: 'Subtotal',
   cart_delivery: 'Delivery Charges',
+  cart_charges: 'Additional Charges',
   cart_gst: 'GST (18%)',
   cart_due_now: 'Due Now',
   cart_pay: 'Pay Now — ₹{amount}',

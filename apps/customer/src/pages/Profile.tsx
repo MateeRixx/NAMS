@@ -17,7 +17,7 @@ interface Address {
 }
 
 const emptyForm = {
-  houseNumber: '', street: '', landmark: '', area: '', city: '', state: '', postalCode: '', isPrimary: false,
+  houseNumber: '', street: '', landmark: '', area: '', city: '', state: '', postalCode: '', zoneId: '', isPrimary: false,
 };
 
 export default function Profile() {
@@ -34,6 +34,7 @@ export default function Profile() {
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loadingAddr, setLoadingAddr] = useState(true);
+  const [deliveryZones, setDeliveryZones] = useState<{ id: string; name: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -42,8 +43,14 @@ export default function Profile() {
   const [deleteAddressId, setDeleteAddressId] = useState<string | null>(null);
 
   useEffect(() => {
-    client.get('/customer-portal/addresses')
-      .then((res) => setAddresses(res.data.data))
+    Promise.all([
+      client.get('/customer-portal/addresses'),
+      client.get('/customer-portal/delivery-zones'),
+    ])
+      .then(([addrRes, zoneRes]) => {
+        setAddresses(addrRes.data.data);
+        setDeliveryZones(zoneRes.data.data);
+      })
       .catch(() => setAddrMsg('Failed to load addresses'))
       .finally(() => setLoadingAddr(false));
   }, []);
@@ -92,6 +99,7 @@ export default function Profile() {
       city: addr.city,
       state: addr.state,
       postalCode: addr.postalCode,
+      zoneId: addr.zone?.id ?? '',
       isPrimary: addr.isPrimary,
     });
     setEditId(addr.id);
@@ -196,6 +204,13 @@ export default function Profile() {
               <label>Postal Code</label>
               <input className="input" value={form.postalCode} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} />
             </div>
+          </div>
+          <div className="input-group">
+            <label>Delivery Zone</label>
+            <select className="select" value={form.zoneId} onChange={(e) => setForm({ ...form, zoneId: e.target.value })}>
+              <option value="">-- Select Zone --</option>
+              {deliveryZones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+            </select>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', marginBottom: '0.75rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={form.isPrimary} onChange={(e) => setForm({ ...form, isPrimary: e.target.checked })} />

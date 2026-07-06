@@ -201,9 +201,10 @@ model Address {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  deliveryZone  DeliveryZone? @relation(fields: [zoneId], references: [id])
-  agency        Agency        @relation(fields: [agencyId], references: [id])
+  customer            Customer               @relation(fields: [customerId], references: [id])
+  deliveryZone        DeliveryZone?           @relation(fields: [zoneId], references: [id])
+  agency                   Agency                 @relation(fields: [agencyId], references: [id])
+  distributionRequests     DistributionRequest[]  @relation("AddressToDistributionRequest")
 
   @@index([customerId])
   @@index([zoneId])
@@ -452,14 +453,19 @@ model DistributionRequest {
   title             String
   description       String?
   requestedQuantity Int
+  deliveryAddressId String?
+  contactPerson     String?
+  contactPhone      String?
+  scheduledDate     DateTime?
   quotedPrice       Decimal?
   status            DistributionRequestStatus @default(PENDING)
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
 
-  agency   Agency   @relation(fields: [agencyId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
-  zones    DistributionRequestZone[]
+  agency           Agency                   @relation(fields: [agencyId], references: [id])
+  customer         Customer                 @relation(fields: [customerId], references: [id])
+  deliveryAddress  Address?                 @relation("AddressToDistributionRequest", fields: [deliveryAddressId], references: [id])
+  zones            DistributionRequestZone[]
 
   @@index([agencyId])
   @@index([customerId])

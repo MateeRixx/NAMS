@@ -251,8 +251,13 @@ export async function generateAndStoreInvoicePdf(
 ): Promise<{ buffer: Buffer; storageUrl: string }> {
   const pdfBuffer = await generateInvoicePdf(data);
 
-  const storageKey = `invoices/${invoiceId}.pdf`;
-  const storageUrl = await storageService.uploadPdf(storageKey, pdfBuffer);
+  let storageUrl = '';
+  try {
+    const storageKey = `invoices/${invoiceId}.pdf`;
+    storageUrl = await storageService.uploadPdf(storageKey, pdfBuffer);
+  } catch (err) {
+    console.error('[PDF] Failed to store invoice PDF in R2:', err);
+  }
 
   return { buffer: pdfBuffer, storageUrl };
 }

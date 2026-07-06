@@ -12,6 +12,8 @@ interface Notification {
   createdAt: string;
 }
 
+interface DeliveryZone { id: string; name: string; }
+
 const PAGE_SIZE = 20;
 
 export default function Notifications() {
@@ -20,6 +22,10 @@ export default function Notifications() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [channelFilter, setChannelFilter] = useState('');
+  const [areaFilter, setAreaFilter] = useState('');
+  const [zoneFilter, setZoneFilter] = useState('');
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
+  const [areas, setAreas] = useState<string[]>([]);
   const [showSend, setShowSend] = useState(false);
   const [sendForm, setSendForm] = useState({ customerId: '', channel: 'EMAIL', title: '', message: '' });
   const [sending, setSending] = useState(false);
@@ -31,19 +37,30 @@ export default function Notifications() {
     try {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String((page - 1) * PAGE_SIZE) });
       if (channelFilter) params.set('channel', channelFilter);
-      const [notifRes, custRes] = await Promise.all([
+      if (areaFilter) params.set('area', areaFilter);
+      if (zoneFilter) params.set('zoneId', zoneFilter);
+      const [notifRes, custRes, zoneRes] = await Promise.all([
         client.get(`/notifications?${params}`),
         client.get('/customers'),
+        client.get('/delivery-zones'),
       ]);
       setNotifications(notifRes.data.data.notifications);
       setTotal(notifRes.data.data.total);
       setCustomers(Array.isArray(custRes.data.data) ? custRes.data.data : custRes.data.data.items);
+      setZones(zoneRes.data.data);
+      const uniqueAreas = [...new Set(
+        (custRes.data.data?.items || custRes.data.data || [])
+          .filter((c: { addresses?: { area: string }[] }) => c.addresses)
+          .flatMap((c: { addresses?: { area: string }[] }) => c.addresses!.map((a) => a.area))
+          .filter(Boolean)
+      )] as string[];
+      setAreas(uniqueAreas);
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => { load(); }, [page, channelFilter]);
+  useEffect(() => { load(); }, [page, channelFilter, areaFilter, zoneFilter]);
 
   async function handleSend() {
     if (!sendForm.title || !sendForm.message) return;
@@ -113,12 +130,20 @@ export default function Notifications() {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: '1rem', padding: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+      <div className="card" style={{ marginBottom: '1rem', padding: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <select className="select" value={channelFilter} onChange={(e) => { setChannelFilter(e.target.value); setPage(1); }} style={{ width: 'auto' }}>
           <option value="">All Channels</option>
           <option value="EMAIL">Email</option>
           <option value="WHATSAPP">WhatsApp</option>
           <option value="PUSH">Push</option>
+        </select>
+        <select className="select" value={zoneFilter} onChange={(e) => { setZoneFilter(e.target.value); setPage(1); }} style={{ width: 'auto' }}>
+          <option value="">All Zones</option>
+          {zones.map((z) => <option key={z.id} value={z.id}>{z.name}</option>)}
+        </select>
+        <select className="select" value={areaFilter} onChange={(e) => { setAreaFilter(e.target.value); setPage(1); }} style={{ width: 'auto' }}>
+          <option value="">All Areas</option>
+          {areas.map((a) => <option key={a} value={a}>{a}</option>)}
         </select>
         <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{total} total</span>
       </div>

@@ -15,6 +15,10 @@ interface DistributionRequest {
   title: string;
   description: string | null;
   requestedQuantity: number;
+  deliveryAddress?: { houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  contactPerson: string | null;
+  contactPhone: string | null;
+  scheduledDate: string | null;
   quotedPrice: number | null;
   status: string;
   createdAt: string;
@@ -143,7 +147,8 @@ export default function Marketplace() {
                 {selectedDist === d.id && (
                   <tr key={`${d.id}-actions`}>
                     <td colSpan={7}>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                         {d.status === 'PENDING' && (
                           <>
                             <button className="btn btn-sm btn-primary" onClick={() => setPromptModal({ type: 'price', requestId: d.id })}>
@@ -167,6 +172,15 @@ export default function Marketplace() {
                         <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.25rem' }}>
                           {d.description && <>Description: {d.description}<br /></>}
                         </span>
+                        </div>
+                        {(d.contactPerson || d.contactPhone || d.scheduledDate || d.deliveryAddress) && (
+                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.25rem', borderTop: '1px solid var(--border)' }}>
+                            {d.contactPerson && <>Contact: {d.contactPerson}</>}
+                            {d.contactPhone && <> &middot; {d.contactPhone}</>}
+                            {d.scheduledDate && <> &middot; Schedule: {new Date(d.scheduledDate).toLocaleDateString()}</>}
+                            {d.deliveryAddress && <> &middot; Address: {d.deliveryAddress.houseNumber}, {d.deliveryAddress.area}, {d.deliveryAddress.city}</>}
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

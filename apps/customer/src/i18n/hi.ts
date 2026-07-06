@@ -20,6 +20,7 @@ const hi: Record<string, string> = {
   cart_days_left: '{s} दिन शेष',
   cart_subtotal: 'कुल',
   cart_delivery: 'डिलीवरी शुल्क',
+  cart_charges: 'अतिरिक्त शुल्क',
   cart_gst: 'जीएसटी (18%)',
   cart_due_now: 'अब देय',
   cart_pay: 'अब भुगतान करें — ₹{amount}',
