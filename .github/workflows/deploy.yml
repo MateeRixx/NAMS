@@ -15,7 +15,9 @@ jobs:
       - name: Write SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          cat > ~/.ssh/ec2_key << 'KEYEOF'
+${{ secrets.EC2_SSH_KEY }}
+KEYEOF
           chmod 600 ~/.ssh/ec2_key
 
       - name: Add EC2 host key
