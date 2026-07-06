@@ -72,10 +72,17 @@ class MockGateway implements PaymentGateway {
 
 class RazorpayGateway implements PaymentGateway {
   private keyId: string;
+
   private keySecret: string;
+
   private razorpayInstance: {
     orders: { create: (args: Record<string, unknown>) => Promise<Record<string, unknown>> };
-    payments: { refund: (paymentId: string, args: Record<string, unknown>) => Promise<Record<string, unknown>> };
+    payments: {
+      refund: (
+        paymentId: string,
+        args: Record<string, unknown>
+      ) => Promise<Record<string, unknown>>;
+    };
   } | null = null;
 
   constructor() {
@@ -97,12 +104,18 @@ class RazorpayGateway implements PaymentGateway {
 
   async createOrder(input: CreateOrderInput): Promise<CreateOrderOutput> {
     const client = await this.getClient();
-    const order = await client.orders.create({
+    const order = (await client.orders.create({
       amount: Math.round(input.amount * 100),
       currency: input.currency,
       receipt: input.receipt,
       notes: input.notes,
-    }) as unknown as { id: string; amount: number; currency: string; receipt: string; status: string };
+    })) as unknown as {
+      id: string;
+      amount: number;
+      currency: string;
+      receipt: string;
+      status: string;
+    };
     return {
       orderId: order.id,
       amount: order.amount / 100,
@@ -122,10 +135,10 @@ class RazorpayGateway implements PaymentGateway {
 
   async processRefund(input: RefundInput): Promise<RefundOutput> {
     const client = await this.getClient();
-    const refund = await client.payments.refund(input.paymentId, {
+    const refund = (await client.payments.refund(input.paymentId, {
       amount: Math.round(input.amount * 100),
       notes: input.notes,
-    }) as unknown as { id: string; payment_id: string; amount: number; status: string };
+    })) as unknown as { id: string; payment_id: string; amount: number; status: string };
     return {
       refundId: refund.id,
       paymentId: refund.payment_id,
@@ -136,9 +149,7 @@ class RazorpayGateway implements PaymentGateway {
 
   verifyWebhook(rawBody: string, signature: string, secret: string): boolean {
     const { createHmac } = require('crypto');
-    const expectedSignature = createHmac('sha256', secret)
-      .update(rawBody)
-      .digest('hex');
+    const expectedSignature = createHmac('sha256', secret).update(rawBody).digest('hex');
     return expectedSignature === signature;
   }
 }

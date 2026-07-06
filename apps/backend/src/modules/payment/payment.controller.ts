@@ -7,7 +7,11 @@ export async function recordPayment(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await paymentService.recordPayment(req.user!.agencyId, req.user!.userId, req.body as never);
+    const result = await paymentService.recordPayment(
+      req.user!.agencyId,
+      req.user!.userId,
+      req.body as never
+    );
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -20,7 +24,11 @@ export async function initOnlinePayment(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await paymentService.initOnlinePayment(req.user!.agencyId, req.user!.userId, req.body as never);
+    const result = await paymentService.initOnlinePayment(
+      req.user!.agencyId,
+      req.user!.userId,
+      req.body as never
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -46,21 +54,25 @@ export async function processRefund(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await paymentService.processRefund(req.user!.agencyId, req.user!.userId, req.body as never);
+    const result = await paymentService.processRefund(
+      req.user!.agencyId,
+      req.user!.userId,
+      req.body as never
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 }
 
-export async function retryPayment(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function retryPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const paymentId = req.params['paymentId']!;
-    const result = await paymentService.retryFailedPayment(req.user!.agencyId, req.user!.userId, paymentId);
+    const result = await paymentService.retryFailedPayment(
+      req.user!.agencyId,
+      req.user!.userId,
+      paymentId
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -73,18 +85,17 @@ export async function retryAllFailedPayments(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await paymentService.retryAllFailedPayments(req.user!.agencyId, req.user!.userId);
+    const result = await paymentService.retryAllFailedPayments(
+      req.user!.agencyId,
+      req.user!.userId
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 }
 
-export async function getPayment(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getPayment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params['id']!;
     const result = await paymentService.getPayment(id, req.user!.agencyId);
@@ -94,11 +105,7 @@ export async function getPayment(
   }
 }
 
-export async function listPayments(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function listPayments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const page = req.query['page'] ? Number(req.query['page']) : 1;
     const pageSize = req.query['pageSize'] ? Number(req.query['pageSize']) : 20;
@@ -123,11 +130,7 @@ export async function getInvoicePayments(
   }
 }
 
-export async function getRefund(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getRefund(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params['id']!;
     const result = await paymentService.getRefund(id, req.user!.agencyId);
@@ -137,11 +140,7 @@ export async function getRefund(
   }
 }
 
-export async function listRefunds(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function listRefunds(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const page = req.query['page'] ? Number(req.query['page']) : 1;
     const pageSize = req.query['pageSize'] ? Number(req.query['pageSize']) : 20;
@@ -158,7 +157,11 @@ export async function saveGatewayConfig(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await paymentService.saveGatewayConfig(req.user!.agencyId, req.user!.userId, req.body as never);
+    const result = await paymentService.saveGatewayConfig(
+      req.user!.agencyId,
+      req.user!.userId,
+      req.body as never
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -205,7 +208,20 @@ export async function handleWebhook(
       return;
     }
 
-    const event = req.body as { event: string; payload: { payment: { entity: { id: string; order_id: string; status: string; failure_reason?: string; amount: number } } } };
+    const event = req.body as {
+      event: string;
+      payload: {
+        payment: {
+          entity: {
+            id: string;
+            order_id: string;
+            status: string;
+            failure_reason?: string;
+            amount: number;
+          };
+        };
+      };
+    };
     const paymentEntity = event.payload.payment.entity;
 
     switch (event.event) {

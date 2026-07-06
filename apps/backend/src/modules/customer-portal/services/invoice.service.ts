@@ -121,7 +121,13 @@ export async function initInvoicePayment(
   customerId: string,
   agencyId: string,
   invoiceId: string
-): Promise<{ orderId: string; amount: number; currency: string; keyId: string | undefined; invoiceNumber: string }> {
+): Promise<{
+  orderId: string;
+  amount: number;
+  currency: string;
+  keyId: string | undefined;
+  invoiceNumber: string;
+}> {
   const invoice = await prisma.invoice.findFirst({
     where: { id: invoiceId, customerId, agencyId },
   });
@@ -174,7 +180,9 @@ export async function verifyInvoicePayment(
   const [payment] = await prisma.$transaction([
     prisma.payment.create({
       data: {
-        agencyId, customerId, invoiceId: invoice.id,
+        agencyId,
+        customerId,
+        invoiceId: invoice.id,
         paymentNumber: seq,
         amount,
         method: 'ONLINE',
@@ -204,7 +212,8 @@ export async function verifyInvoicePayment(
   const customer = await prisma.customer.findFirst({ where: { id: customerId } });
   if (customer?.email) {
     createAndQueueNotification({
-      agencyId, customerId,
+      agencyId,
+      customerId,
       type: 'PAYMENT_RECEIVED',
       channel: 'EMAIL',
       title: 'Payment Received',

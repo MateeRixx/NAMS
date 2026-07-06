@@ -28,7 +28,9 @@ import pushRoutes from './modules/push/push.routes.js';
 const app: Express = express();
 
 const envOrigins = config.ALLOWED_ORIGINS
-  ? config.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+  ? config.ALLOWED_ORIGINS.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
   : [];
 const allowedOrigins = [
   config.ADMIN_DASHBOARD_URL,
@@ -40,7 +42,9 @@ const allowedOrigins = [
 ];
 
 const cspExtra = config.CSP_CONNECT_SRC
-  ? config.CSP_CONNECT_SRC.split(',').map(s => s.trim()).filter(Boolean)
+  ? config.CSP_CONNECT_SRC.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
   : [];
 
 app.use(
@@ -48,7 +52,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", ...allowedOrigins.filter(o => o.startsWith('http')), ...cspExtra],
+        connectSrc: ["'self'", ...allowedOrigins.filter((o) => o.startsWith('http')), ...cspExtra],
         upgradeInsecureRequests: null,
       },
     },
@@ -71,9 +75,15 @@ app.use(compression());
 app.use((req, _res, next) => {
   if (req.path.startsWith(`${config.API_PREFIX}/payments/webhook`)) {
     let data = '';
-    req.on('data', (chunk: Buffer) => { data += chunk.toString('utf8'); });
+    req.on('data', (chunk: Buffer) => {
+      data += chunk.toString('utf8');
+    });
     req.on('end', () => {
-      try { req.body = JSON.parse(data); } catch { req.body = {}; }
+      try {
+        req.body = JSON.parse(data);
+      } catch {
+        req.body = {};
+      }
       (req as unknown as Record<string, unknown>)['rawBody'] = data;
       next();
     });

@@ -7,7 +7,11 @@ export async function generateInvoice(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await billingService.generateInvoice(req.body as never, req.user!.agencyId, req.user!.userId);
+    const result = await billingService.generateInvoice(
+      req.body as never,
+      req.user!.agencyId,
+      req.user!.userId
+    );
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     next(error);

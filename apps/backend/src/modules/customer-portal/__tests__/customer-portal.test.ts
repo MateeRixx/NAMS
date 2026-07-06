@@ -1,11 +1,23 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotFoundError, ConflictError } from '@newsflow/shared';
 
+import prisma from '@newsflow/database';
+
+import * as subService from '../services/subscription.service.js';
+import * as invService from '../services/invoice.service.js';
+import * as compService from '../services/complaint.service.js';
+
 vi.mock('@newsflow/database', () => ({
   default: {
     customer: { findFirst: vi.fn(), findMany: vi.fn() },
     product: { findMany: vi.fn(), findUnique: vi.fn() },
-    subscription: { findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    subscription: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     invoice: { findMany: vi.fn(), findFirst: vi.fn() },
     complaint: { findMany: vi.fn(), create: vi.fn(), count: vi.fn().mockResolvedValue(0) },
     complaintHistory: { create: vi.fn() },
@@ -33,7 +45,9 @@ vi.mock('../../services/audit.service.js', () => ({
 }));
 
 vi.mock('../../services/pdf.service.js', () => ({
-  generateAndStoreInvoicePdf: vi.fn().mockResolvedValue({ buffer: Buffer.from(''), storageUrl: 'test' }),
+  generateAndStoreInvoicePdf: vi
+    .fn()
+    .mockResolvedValue({ buffer: Buffer.from(''), storageUrl: 'test' }),
 }));
 
 vi.mock('../../services/payment-gateway.service.js', () => ({
@@ -75,13 +89,13 @@ vi.mock('../billing/billing.service.js', () => ({
   getInvoicePdf: vi.fn().mockResolvedValue(Buffer.from('pdf')),
 }));
 
-import prisma from '@newsflow/database';
-
-import * as subService from '../services/subscription.service.js';
-import * as invService from '../services/invoice.service.js';
-import * as compService from '../services/complaint.service.js';
-
-const mockCustomer = { id: 'cust-1', agencyId: 'agency-1', firstName: 'John', lastName: 'Doe', status: 'ACTIVE' };
+const mockCustomer = {
+  id: 'cust-1',
+  agencyId: 'agency-1',
+  firstName: 'John',
+  lastName: 'Doe',
+  status: 'ACTIVE',
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -91,7 +105,9 @@ describe('subscription service', () => {
   describe('listSubscriptions', () => {
     it('throws NotFoundError when customer does not exist', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(null);
-      await expect(subService.listSubscriptions('nonexistent', 'agency-1')).rejects.toThrow(NotFoundError);
+      await expect(subService.listSubscriptions('nonexistent', 'agency-1')).rejects.toThrow(
+        NotFoundError
+      );
     });
 
     it('returns subscriptions with product details', async () => {
@@ -120,7 +136,9 @@ describe('subscription service', () => {
     it('throws NotFoundError when subscription does not exist', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(mockCustomer as never);
       vi.mocked(prisma.subscription.findFirst).mockResolvedValue(null);
-      await expect(subService.cancelSubscription('sub-x', 'cust-1', 'agency-1')).rejects.toThrow(NotFoundError);
+      await expect(subService.cancelSubscription('sub-x', 'cust-1', 'agency-1')).rejects.toThrow(
+        NotFoundError
+      );
     });
   });
 });
@@ -129,7 +147,9 @@ describe('invoice service', () => {
   describe('listInvoices', () => {
     it('throws NotFoundError when customer does not exist', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(null);
-      await expect(invService.listInvoices('nonexistent', 'agency-1')).rejects.toThrow(NotFoundError);
+      await expect(invService.listInvoices('nonexistent', 'agency-1')).rejects.toThrow(
+        NotFoundError
+      );
     });
 
     it('returns empty list when no invoices', async () => {
@@ -143,7 +163,9 @@ describe('invoice service', () => {
   describe('getInvoice', () => {
     it('throws NotFoundError when invoice does not exist', async () => {
       vi.mocked(prisma.invoice.findFirst).mockResolvedValue(null);
-      await expect(invService.getInvoice('inv-x', 'cust-1', 'agency-1')).rejects.toThrow(NotFoundError);
+      await expect(invService.getInvoice('inv-x', 'cust-1', 'agency-1')).rejects.toThrow(
+        NotFoundError
+      );
     });
   });
 });
@@ -152,13 +174,22 @@ describe('complaint service', () => {
   describe('listComplaints', () => {
     it('throws NotFoundError when customer does not exist', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(null);
-      await expect(compService.listComplaints('nonexistent', 'agency-1')).rejects.toThrow(NotFoundError);
+      await expect(compService.listComplaints('nonexistent', 'agency-1')).rejects.toThrow(
+        NotFoundError
+      );
     });
 
     it('returns complaints list', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(mockCustomer as never);
       vi.mocked(prisma.complaint.findMany).mockResolvedValue([
-        { id: 'comp-1', type: 'DELIVERY', description: 'Late', status: 'PENDING', createdAt: new Date(), resolvedAt: null },
+        {
+          id: 'comp-1',
+          type: 'DELIVERY',
+          description: 'Late',
+          status: 'PENDING',
+          createdAt: new Date(),
+          resolvedAt: null,
+        },
       ] as never);
       const result = await compService.listComplaints('cust-1', 'agency-1');
       expect(result).toHaveLength(1);
@@ -169,14 +200,22 @@ describe('complaint service', () => {
   describe('createComplaint', () => {
     it('throws NotFoundError when customer does not exist', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(null);
-      await expect(compService.createComplaint('nonexistent', 'agency-1', { type: 'DELIVERY' })).rejects.toThrow(NotFoundError);
+      await expect(
+        compService.createComplaint('nonexistent', 'agency-1', { type: 'DELIVERY' })
+      ).rejects.toThrow(NotFoundError);
     });
 
     it('creates and returns complaint', async () => {
       vi.mocked(prisma.customer.findFirst).mockResolvedValue(mockCustomer as never);
       vi.mocked(prisma.complaint.create).mockResolvedValue({
-        id: 'comp-1', customerId: 'cust-1', agencyId: 'agency-1', type: 'DELIVERY',
-        description: null, status: 'PENDING', createdAt: new Date(), resolvedAt: null,
+        id: 'comp-1',
+        customerId: 'cust-1',
+        agencyId: 'agency-1',
+        type: 'DELIVERY',
+        description: null,
+        status: 'PENDING',
+        createdAt: new Date(),
+        resolvedAt: null,
       } as never);
       const result = await compService.createComplaint('cust-1', 'agency-1', { type: 'DELIVERY' });
       expect(result.type).toBe('DELIVERY');

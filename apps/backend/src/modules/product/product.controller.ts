@@ -31,7 +31,12 @@ export async function updateProduct(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await productService.updateProduct(id, req.body as never, req.user!.agencyId, req.user!.userId);
+    const result = await productService.updateProduct(
+      id,
+      req.body as never,
+      req.user!.agencyId,
+      req.user!.userId
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

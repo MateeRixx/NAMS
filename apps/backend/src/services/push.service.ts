@@ -15,15 +15,20 @@ function getVapidKeys(): { publicKey: string; privateKey: string } {
   }
 
   if (existsSync(VAPID_KEYS_FILE)) {
-    return JSON.parse(readFileSync(VAPID_KEYS_FILE, 'utf-8')) as { publicKey: string; privateKey: string };
+    return JSON.parse(readFileSync(VAPID_KEYS_FILE, 'utf-8')) as {
+      publicKey: string;
+      privateKey: string;
+    };
   }
 
   const keys = webpush.generateVAPIDKeys();
   try {
     writeFileSync(VAPID_KEYS_FILE, JSON.stringify(keys, null, 2));
-    if (config.NODE_ENV === 'development') console.log('[PushService] Generated new VAPID keys and saved to vapid-keys.json');
+    if (config.NODE_ENV === 'development')
+      console.log('[PushService] Generated new VAPID keys and saved to vapid-keys.json');
   } catch (err) {
-    if (config.NODE_ENV === 'development') console.warn('[PushService] Could not save VAPID keys to file:', err);
+    if (config.NODE_ENV === 'development')
+      console.warn('[PushService] Could not save VAPID keys to file:', err);
   }
   return keys;
 }
@@ -46,12 +51,20 @@ export function getVapidPublicKey(): string {
   return getVapidKeys().publicKey;
 }
 
-export async function subscribe(customerId: string, sub: { endpoint: string; keys: { p256dh: string; auth: string } }, userAgent?: string): Promise<void> {
+export async function subscribe(
+  customerId: string,
+  sub: { endpoint: string; keys: { p256dh: string; auth: string } },
+  userAgent?: string
+): Promise<void> {
   const existing = await prisma.pushSubscription.findUnique({ where: { endpoint: sub.endpoint } });
   if (existing) {
     await prisma.pushSubscription.update({
       where: { id: existing.id },
-      data: { p256dh: sub.keys.p256dh, auth: sub.keys.auth, userAgent: userAgent ?? existing.userAgent },
+      data: {
+        p256dh: sub.keys.p256dh,
+        auth: sub.keys.auth,
+        userAgent: userAgent ?? existing.userAgent,
+      },
     });
     return;
   }
@@ -81,7 +94,7 @@ export async function sendToCustomer(
     icon?: string;
     badge?: string;
     image?: string;
-    actions?: Array<{ action: string; title: string }>;
+    actions?: { action: string; title: string }[];
     vibrate?: number[];
   }
 ): Promise<number> {
@@ -94,7 +107,11 @@ export async function sendToCustomer(
     icon: payload.icon || '/favicon.svg',
     badge: payload.badge || '/favicon.svg',
     vibrate: payload.vibrate || [200, 100, 200],
-    data: { url: payload.data?.['url'] || '/', type: payload.data?.['type'] || 'GENERAL', ...payload.data },
+    data: {
+      url: payload.data?.['url'] || '/',
+      type: payload.data?.['type'] || 'GENERAL',
+      ...payload.data,
+    },
   });
 
   let sent = 0;

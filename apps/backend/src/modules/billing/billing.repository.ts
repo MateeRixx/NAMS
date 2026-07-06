@@ -37,7 +37,10 @@ export async function findActiveSubscriptionsInPeriod(
   });
 }
 
-export async function findDayRateForProduct(productId: string, dayOfWeek: number): Promise<number | null> {
+export async function findDayRateForProduct(
+  productId: string,
+  dayOfWeek: number
+): Promise<number | null> {
   const rate = await prisma.productDayRate.findUnique({
     where: { productId_dayOfWeek: { productId, dayOfWeek } },
     select: { price: true },
@@ -70,9 +73,7 @@ export async function findResolvedComplaintsInPeriod(
       customerId,
       agencyId,
       status: 'RESOLVED',
-      AND: [
-        { createdAt: { gte: startDate, lte: endDate } },
-      ],
+      AND: [{ createdAt: { gte: startDate, lte: endDate } }],
     },
     include: {
       subscription: {

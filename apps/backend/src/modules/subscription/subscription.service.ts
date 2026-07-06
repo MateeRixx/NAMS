@@ -141,7 +141,11 @@ export async function cancelSubscription(
     console.log(`[SubscriptionService] Final invoice ${invoice.invoiceNumber} generated`);
   }
 
-  const updated = await subscriptionRepository.cancelSubscriptionWithEndDate(id, agencyId, cancelDate);
+  const updated = await subscriptionRepository.cancelSubscriptionWithEndDate(
+    id,
+    agencyId,
+    cancelDate
+  );
 
   logAudit({
     agencyId,

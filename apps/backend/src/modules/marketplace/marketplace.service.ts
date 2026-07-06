@@ -194,7 +194,7 @@ export async function updateDistributionRequest(
         ? 'DISTRIBUTION_QUOTED'
         : `DISTRIBUTION_STATUS_CHANGED:${request.status}→${dto.status ?? request.status}`,
     oldValue: { status: request.status, quotedPrice: request.quotedPrice },
-    newValue: updateData as Record<string, unknown>,
+    newValue: updateData,
   });
 
   const customer = await marketplaceRepository.findCustomerById(request.customerId, agencyId);
@@ -307,7 +307,7 @@ export async function updateArticleRequest(
     entityType: 'ArticleRequest',
     entityId: id,
     action: dto.status
-      ? 'ARTICLE_STATUS_CHANGED:' + request.status + '->' + dto.status
+      ? `ARTICLE_STATUS_CHANGED:${request.status}->${dto.status}`
       : 'ARTICLE_UPDATED',
     oldValue: { status: request.status, reviewNotes: request.reviewNotes },
     newValue: { status: dto.status, reviewNotes: dto.reviewNotes },

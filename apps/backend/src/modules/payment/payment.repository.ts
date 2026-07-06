@@ -6,7 +6,13 @@ export async function getNextPaymentNumber(agencyId: string): Promise<string> {
   const year = now.getFullYear();
   const ym = `${year}${String(month).padStart(2, '0')}`;
   const count = await prisma.payment.count({
-    where: { agencyId, createdAt: { gte: new Date(year, month - 1, 1), lt: new Date(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1) } },
+    where: {
+      agencyId,
+      createdAt: {
+        gte: new Date(year, month - 1, 1),
+        lt: new Date(month === 12 ? year + 1 : year, month === 12 ? 0 : month, 1),
+      },
+    },
   });
   return `PAY-${ym}-${String(count + 1).padStart(4, '0')}`;
 }
@@ -14,7 +20,10 @@ export async function getNextPaymentNumber(agencyId: string): Promise<string> {
 export async function findPaymentById(id: string, agencyId: string) {
   return prisma.payment.findFirst({
     where: { id, agencyId },
-    include: { invoice: { select: { invoiceNumber: true } }, customer: { select: { firstName: true, lastName: true } } },
+    include: {
+      invoice: { select: { invoiceNumber: true } },
+      customer: { select: { firstName: true, lastName: true } },
+    },
   });
 }
 
@@ -51,7 +60,10 @@ export async function createPayment(data: {
       paidAt: new Date(),
       attemptCount: 1,
     },
-    include: { invoice: { select: { invoiceNumber: true } }, customer: { select: { firstName: true, lastName: true } } },
+    include: {
+      invoice: { select: { invoiceNumber: true } },
+      customer: { select: { firstName: true, lastName: true } },
+    },
   });
 }
 
@@ -63,7 +75,10 @@ export async function listPayments(agencyId: string, page: number, pageSize: num
       orderBy: { createdAt: 'desc' },
       skip: offset,
       take: pageSize,
-      include: { invoice: { select: { invoiceNumber: true } }, customer: { select: { firstName: true, lastName: true } } },
+      include: {
+        invoice: { select: { invoiceNumber: true } },
+        customer: { select: { firstName: true, lastName: true } },
+      },
     }),
     prisma.payment.count({ where: { agencyId } }),
   ]);
@@ -80,7 +95,13 @@ export async function findPaymentsByInvoiceId(invoiceId: string, agencyId: strin
 export async function updatePaymentStatus(
   id: string,
   agencyId: string,
-  data: { status: string; transactionReference?: string; failureReason?: string | null; attemptCount?: number; gatewayPaymentId?: string }
+  data: {
+    status: string;
+    transactionReference?: string;
+    failureReason?: string | null;
+    attemptCount?: number;
+    gatewayPaymentId?: string;
+  }
 ) {
   return prisma.payment.updateMany({
     where: { id, agencyId },
@@ -124,7 +145,14 @@ export async function listRefunds(agencyId: string, page: number, pageSize: numb
       orderBy: { createdAt: 'desc' },
       skip: offset,
       take: pageSize,
-      include: { payment: { include: { invoice: { select: { invoiceNumber: true } }, customer: { select: { firstName: true, lastName: true } } } } },
+      include: {
+        payment: {
+          include: {
+            invoice: { select: { invoiceNumber: true } },
+            customer: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
     }),
     prisma.paymentRefund.count({ where: { agencyId } }),
   ]);
@@ -139,11 +167,17 @@ export async function findFailedPayments(agencyId: string) {
       status: 'FAILED',
       attemptCount: { lt: MAX_RETRY_ATTEMPTS },
     },
-    include: { invoice: { select: { invoiceNumber: true, totalAmount: true } }, customer: { select: { firstName: true, lastName: true, email: true } } },
+    include: {
+      invoice: { select: { invoiceNumber: true, totalAmount: true } },
+      customer: { select: { firstName: true, lastName: true, email: true } },
+    },
   });
 }
 
-export async function findOrCreateGatewayConfig(agencyId: string, data: { provider: string; apiKey: string; apiSecret: string; webhookSecret?: string }) {
+export async function findOrCreateGatewayConfig(
+  agencyId: string,
+  data: { provider: string; apiKey: string; apiSecret: string; webhookSecret?: string }
+) {
   return prisma.paymentGatewayConfig.upsert({
     where: { agencyId },
     create: { agencyId, ...data, provider: data.provider as never },

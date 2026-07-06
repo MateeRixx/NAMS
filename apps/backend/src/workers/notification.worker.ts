@@ -9,19 +9,28 @@ export function startNotificationWorker(connection: Redis): Worker {
   const worker = new Worker(
     'notifications',
     async (job) => {
-      const { notificationId, channel, emailTo, emailSubject, type, title, message, templateData, customerId } =
-        job.data as {
-          notificationId: string;
-          channel: string;
-          emailTo?: string;
-          emailSubject?: string;
-          type: string;
-          title: string;
-          message: string;
-          templateData?: Record<string, string>;
-          customerId?: string;
-          agencyId?: string;
-        };
+      const {
+        notificationId,
+        channel,
+        emailTo,
+        emailSubject,
+        type,
+        title,
+        message,
+        templateData,
+        customerId,
+      } = job.data as {
+        notificationId: string;
+        channel: string;
+        emailTo?: string;
+        emailSubject?: string;
+        type: string;
+        title: string;
+        message: string;
+        templateData?: Record<string, string>;
+        customerId?: string;
+        agencyId?: string;
+      };
 
       if (channel === 'EMAIL') {
         const emailQueue = getQueue('email');
@@ -40,7 +49,9 @@ export function startNotificationWorker(connection: Redis): Worker {
         );
       } else if (channel === 'WHATSAPP') {
         if (!isWhatsAppConfigured()) {
-          console.warn(`[NotificationWorker] WhatsApp not configured, marking ${notificationId} as SENT`);
+          console.warn(
+            `[NotificationWorker] WhatsApp not configured, marking ${notificationId} as SENT`
+          );
           await prisma.notification.update({
             where: { id: notificationId },
             data: { status: 'SENT', sentAt: new Date() },
@@ -59,7 +70,9 @@ export function startNotificationWorker(connection: Redis): Worker {
         }
 
         if (!phone) {
-          console.warn(`[NotificationWorker] No phone number for WhatsApp notification ${notificationId}`);
+          console.warn(
+            `[NotificationWorker] No phone number for WhatsApp notification ${notificationId}`
+          );
           await prisma.notification.update({
             where: { id: notificationId },
             data: { status: 'FAILED' },
@@ -82,7 +95,9 @@ export function startNotificationWorker(connection: Redis): Worker {
         }
       } else if (channel === 'PUSH') {
         if (!customerId) {
-          console.warn(`[NotificationWorker] No customerId for PUSH notification ${notificationId}`);
+          console.warn(
+            `[NotificationWorker] No customerId for PUSH notification ${notificationId}`
+          );
           await prisma.notification.update({
             where: { id: notificationId },
             data: { status: 'FAILED' },

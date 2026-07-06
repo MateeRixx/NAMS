@@ -13,10 +13,6 @@ router.get(
   authorize(UserRole.AGENCY_ADMIN, UserRole.AGENCY_STAFF),
   auditController.listAuditLogs
 );
-router.get(
-  '/:id',
-  authorize(UserRole.AGENCY_ADMIN),
-  auditController.getAuditLog
-);
+router.get('/:id', authorize(UserRole.AGENCY_ADMIN), auditController.getAuditLog);
 
 export default router;

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotFoundError, ConflictError } from '@newsflow/shared';
 
+import * as billingService from '../billing.service.js';
+import * as billingRepository from '../billing.repository.js';
+
 vi.mock('@newsflow/database', () => ({
   default: {},
 }));
@@ -10,7 +13,9 @@ vi.mock('../../billing-charge/billing-charge.repository.js', () => ({
 }));
 
 vi.mock('../../../services/pdf.service.js', () => ({
-  generateAndStoreInvoicePdf: vi.fn().mockResolvedValue({ buffer: Buffer.from(''), storageUrl: 'test' }),
+  generateAndStoreInvoicePdf: vi
+    .fn()
+    .mockResolvedValue({ buffer: Buffer.from(''), storageUrl: 'test' }),
 }));
 
 vi.mock('../../../services/notification.service.js', () => ({
@@ -39,12 +44,22 @@ vi.mock('../billing.repository.js', () => ({
   findDayRateForProduct: vi.fn(),
 }));
 
-import * as billingService from '../billing.service.js';
-import * as billingRepository from '../billing.repository.js';
-
 const mockAgency = { id: 'agency-1', name: 'Test Agency', taxRate: 18 };
-const mockCustomer = { id: 'customer-1', agencyId: 'agency-1', firstName: 'John', lastName: 'Doe', email: 'john@test.com', phone: '1234567890', customerCode: 'C001' };
-const mockProduct = { id: 'product-1', name: 'Daily News', basePrice: { toString: () => '10' }, type: 'NEWSPAPER' };
+const mockCustomer = {
+  id: 'customer-1',
+  agencyId: 'agency-1',
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john@test.com',
+  phone: '1234567890',
+  customerCode: 'C001',
+};
+const mockProduct = {
+  id: 'product-1',
+  name: 'Daily News',
+  basePrice: { toString: () => '10' },
+  type: 'NEWSPAPER',
+};
 const mockSubscription = {
   id: 'sub-1',
   productId: 'product-1',
@@ -98,16 +113,24 @@ describe('Billing Service', () => {
       vi.mocked(billingRepository.findCustomerById).mockResolvedValue(null);
 
       await expect(
-        billingService.generateInvoice({ customerId: 'nonexistent', billingMonth: 1, billingYear: 2026 }, 'agency-1')
+        billingService.generateInvoice(
+          { customerId: 'nonexistent', billingMonth: 1, billingYear: 2026 },
+          'agency-1'
+        )
       ).rejects.toThrow(NotFoundError);
     });
 
     it('should throw ConflictError when invoice already exists for period', async () => {
       vi.mocked(billingRepository.findCustomerById).mockResolvedValue(mockCustomer as never);
-      vi.mocked(billingRepository.findExistingInvoice).mockResolvedValue({ id: 'existing' } as never);
+      vi.mocked(billingRepository.findExistingInvoice).mockResolvedValue({
+        id: 'existing',
+      } as never);
 
       await expect(
-        billingService.generateInvoice({ customerId: 'customer-1', billingMonth: 1, billingYear: 2026 }, 'agency-1')
+        billingService.generateInvoice(
+          { customerId: 'customer-1', billingMonth: 1, billingYear: 2026 },
+          'agency-1'
+        )
       ).rejects.toThrow(ConflictError);
     });
 
@@ -118,7 +141,10 @@ describe('Billing Service', () => {
       vi.mocked(billingRepository.findActiveSubscriptionsInPeriod).mockResolvedValue([]);
 
       await expect(
-        billingService.generateInvoice({ customerId: 'customer-1', billingMonth: 1, billingYear: 2026 }, 'agency-1')
+        billingService.generateInvoice(
+          { customerId: 'customer-1', billingMonth: 1, billingYear: 2026 },
+          'agency-1'
+        )
       ).rejects.toThrow(NotFoundError);
     });
 
@@ -126,14 +152,20 @@ describe('Billing Service', () => {
       vi.mocked(billingRepository.findCustomerById).mockResolvedValue(mockCustomer as never);
       vi.mocked(billingRepository.findExistingInvoice).mockResolvedValue(null);
       vi.mocked(billingRepository.findAgencyById).mockResolvedValue(mockAgency as never);
-      vi.mocked(billingRepository.findActiveSubscriptionsInPeriod).mockResolvedValue([mockSubscription] as never);
+      vi.mocked(billingRepository.findActiveSubscriptionsInPeriod).mockResolvedValue([
+        mockSubscription,
+      ] as never);
       vi.mocked(billingRepository.findProductDayRates).mockResolvedValue([]);
-      vi.mocked(billingRepository.findPrimaryAddressZone).mockResolvedValue({ monthlyCharge: { toString: () => '50' } } as never);
+      vi.mocked(billingRepository.findPrimaryAddressZone).mockResolvedValue({
+        monthlyCharge: { toString: () => '50' },
+      } as never);
       vi.mocked(billingRepository.findResolvedComplaintsInPeriod).mockResolvedValue([]);
       vi.mocked(billingRepository.findUnresolvedComplaintsInPeriod).mockResolvedValue([]);
       vi.mocked(billingRepository.sumUnpaidPreviousInvoices).mockResolvedValue(0);
       vi.mocked(billingRepository.getNextInvoiceSequence).mockResolvedValue(1);
-      vi.mocked(billingRepository.createInvoiceWithItems).mockResolvedValue(mockInvoiceData as never);
+      vi.mocked(billingRepository.createInvoiceWithItems).mockResolvedValue(
+        mockInvoiceData as never
+      );
 
       const result = await billingService.generateInvoice(
         { customerId: 'customer-1', billingMonth: 1, billingYear: 2026 },
@@ -154,7 +186,9 @@ describe('Billing Service', () => {
     it('should throw NotFoundError when invoice does not exist', async () => {
       vi.mocked(billingRepository.findInvoiceById).mockResolvedValue(null);
 
-      await expect(billingService.getInvoice('nonexistent', 'agency-1')).rejects.toThrow(NotFoundError);
+      await expect(billingService.getInvoice('nonexistent', 'agency-1')).rejects.toThrow(
+        NotFoundError
+      );
     });
 
     it('should return invoice when found', async () => {

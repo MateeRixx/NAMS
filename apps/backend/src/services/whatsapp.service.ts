@@ -1,6 +1,8 @@
 import { config } from '../config/index.js';
 
-let twilioClient: { messages: { create: (args: { from: string; to: string; body: string }) => Promise<unknown> } } | null = null;
+let twilioClient: {
+  messages: { create: (args: { from: string; to: string; body: string }) => Promise<unknown> };
+} | null = null;
 
 async function getClient() {
   if (!twilioClient) {
@@ -28,11 +30,11 @@ export async function sendWhatsApp(params: SendWhatsAppParams): Promise<{ sid: s
     const client = await getClient();
     const fromNumber = config.WHATSAPP_FROM_NUMBER!;
 
-    const result = await client.messages.create({
+    const result = (await client.messages.create({
       from: `whatsapp:${fromNumber}`,
       to: `whatsapp:${params.to}`,
       body: params.message,
-    }) as { sid: string };
+    })) as { sid: string };
 
     console.log(`[WhatsAppService] Message sent to ${params.to}: ${result.sid}`);
     return { sid: result.sid };
@@ -43,8 +45,10 @@ export async function sendWhatsApp(params: SendWhatsAppParams): Promise<{ sid: s
 }
 
 export function isWhatsAppConfigured(): boolean {
-  return !!(config.WHATSAPP_PROVIDER === 'twilio'
-    && config.WHATSAPP_ACCOUNT_SID
-    && config.WHATSAPP_AUTH_TOKEN
-    && config.WHATSAPP_FROM_NUMBER);
+  return !!(
+    config.WHATSAPP_PROVIDER === 'twilio' &&
+    config.WHATSAPP_ACCOUNT_SID &&
+    config.WHATSAPP_AUTH_TOKEN &&
+    config.WHATSAPP_FROM_NUMBER
+  );
 }

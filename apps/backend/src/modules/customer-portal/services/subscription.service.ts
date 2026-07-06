@@ -100,7 +100,10 @@ export async function getDashboard(customerId: string, agencyId: string): Promis
   };
 }
 
-function computeMonthlyCost(product: { basePrice: { toString: () => string }; dayRates?: { dayOfWeek: number; price: { toString: () => string } }[] }): number {
+function computeMonthlyCost(product: {
+  basePrice: { toString: () => string };
+  dayRates?: { dayOfWeek: number; price: { toString: () => string } }[];
+}): number {
   const basePrice = Number(product.basePrice.toString());
   const dayRateMap = new Map<number, number>();
   for (const r of product.dayRates ?? []) {
@@ -118,10 +121,16 @@ function computeMonthlyCost(product: { basePrice: { toString: () => string }; da
   return Math.round(total * 100) / 100;
 }
 
-export async function listProducts(
-  agencyId: string
-): Promise<
-  { id: string; name: string; type: string; basePrice: number; description: string | null; estimatedMonthlyCost: number; dayRates: { dayOfWeek: number; price: number }[] }[]
+export async function listProducts(agencyId: string): Promise<
+  {
+    id: string;
+    name: string;
+    type: string;
+    basePrice: number;
+    description: string | null;
+    estimatedMonthlyCost: number;
+    dayRates: { dayOfWeek: number; price: number }[];
+  }[]
 > {
   const products = await prisma.product.findMany({
     where: { agencyId, isActive: true },
@@ -245,7 +254,12 @@ export async function cancelSubscription(
 
   const cancelDate = new Date();
 
-  const invoice = await generateCancellationInvoice(customerId, agencyId, subscriptionId, cancelDate);
+  const invoice = await generateCancellationInvoice(
+    customerId,
+    agencyId,
+    subscriptionId,
+    cancelDate
+  );
   if (invoice) {
     console.log(`[CustomerPortal] Final invoice ${invoice.invoiceNumber} generated`);
   }
@@ -362,7 +376,13 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
-export function calcProductCost(product: { basePrice: { toString: () => string }; dayRates?: { dayOfWeek: number; price: { toString: () => string } }[] }, startDate: Date): { billableDays: number; totalAmount: number; dayRateMap: Map<number, number> } {
+export function calcProductCost(
+  product: {
+    basePrice: { toString: () => string };
+    dayRates?: { dayOfWeek: number; price: { toString: () => string } }[];
+  },
+  startDate: Date
+): { billableDays: number; totalAmount: number; dayRateMap: Map<number, number> } {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;

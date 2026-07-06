@@ -81,7 +81,11 @@ export async function updateProduct(
     throw new NotFoundError('Product');
   }
 
-  const oldData = { name: product.name, basePrice: Number(product.basePrice), isActive: product.isActive };
+  const oldData = {
+    name: product.name,
+    basePrice: Number(product.basePrice),
+    isActive: product.isActive,
+  };
   const updated = await productRepository.updateProduct(id, agencyId, dto);
 
   logAudit({
@@ -91,13 +95,21 @@ export async function updateProduct(
     entityId: id,
     action: 'PRODUCT_UPDATED',
     oldValue: oldData,
-    newValue: { name: updated.name, basePrice: Number(updated.basePrice), isActive: updated.isActive },
+    newValue: {
+      name: updated.name,
+      basePrice: Number(updated.basePrice),
+      isActive: updated.isActive,
+    },
   });
 
   return toProductResponse(updated);
 }
 
-export async function activateProduct(id: string, agencyId: string, userId?: string): Promise<ProductResponse> {
+export async function activateProduct(
+  id: string,
+  agencyId: string,
+  userId?: string
+): Promise<ProductResponse> {
   const product = await productRepository.findProductById(id, agencyId);
   if (!product) {
     throw new NotFoundError('Product');
@@ -118,7 +130,11 @@ export async function activateProduct(id: string, agencyId: string, userId?: str
   return toProductResponse(updated);
 }
 
-export async function deactivateProduct(id: string, agencyId: string, userId?: string): Promise<ProductResponse> {
+export async function deactivateProduct(
+  id: string,
+  agencyId: string,
+  userId?: string
+): Promise<ProductResponse> {
   const product = await productRepository.findProductById(id, agencyId);
   if (!product) {
     throw new NotFoundError('Product');

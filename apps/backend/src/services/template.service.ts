@@ -14,10 +14,7 @@ function loadTemplate(name: string): string {
   return templateCache.get(name)!;
 }
 
-export function renderEmailTemplate(
-  type: string,
-  data: Record<string, string>
-): string {
+export function renderEmailTemplate(type: string, data: Record<string, string>): string {
   const templateName = `email-${type.toLowerCase()}`;
   let html: string;
   try {

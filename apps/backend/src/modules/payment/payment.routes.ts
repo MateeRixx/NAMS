@@ -3,7 +3,13 @@ import { UserRole } from '@newsflow/shared';
 import { authentication } from '../../middleware/authentication.js';
 import { authorize } from '../../middleware/authorization.js';
 import { validate } from '../../middleware/validation.js';
-import { recordPaymentSchema, processRefundSchema, retryPaymentSchema, initOnlinePaymentSchema, saveGatewayConfigSchema } from './payment.validator.js';
+import {
+  recordPaymentSchema,
+  processRefundSchema,
+  retryPaymentSchema,
+  initOnlinePaymentSchema,
+  saveGatewayConfigSchema,
+} from './payment.validator.js';
 import * as paymentController from './payment.controller.js';
 
 const router = Router();
@@ -39,11 +45,7 @@ router.post(
   paymentController.processRefund
 );
 
-router.post(
-  '/:paymentId/retry',
-  authorize(UserRole.AGENCY_ADMIN),
-  paymentController.retryPayment
-);
+router.post('/:paymentId/retry', authorize(UserRole.AGENCY_ADMIN), paymentController.retryPayment);
 
 router.post(
   '/retry-all-failed',
@@ -69,17 +71,9 @@ router.get(
   paymentController.listRefunds
 );
 
-router.get(
-  '/refunds/:id',
-  authorize(UserRole.AGENCY_ADMIN),
-  paymentController.getRefund
-);
+router.get('/refunds/:id', authorize(UserRole.AGENCY_ADMIN), paymentController.getRefund);
 
-router.get(
-  '/gateway-config',
-  authorize(UserRole.AGENCY_ADMIN),
-  paymentController.getGatewayConfig
-);
+router.get('/gateway-config', authorize(UserRole.AGENCY_ADMIN), paymentController.getGatewayConfig);
 
 router.put(
   '/gateway-config',

@@ -38,7 +38,11 @@ export async function cancelSubscription(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await subscriptionService.cancelSubscription(id, req.user!.agencyId, req.user!.userId);
+    const result = await subscriptionService.cancelSubscription(
+      id,
+      req.user!.agencyId,
+      req.user!.userId
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -71,7 +75,11 @@ export async function resumeSubscription(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await subscriptionService.resumeSubscription(id, req.user!.agencyId, req.user!.userId);
+    const result = await subscriptionService.resumeSubscription(
+      id,
+      req.user!.agencyId,
+      req.user!.userId
+    );
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);

@@ -4,7 +4,15 @@ import { logAudit } from '../../services/audit.service.js';
 import { createAndQueueNotification } from '../../services/notification.service.js';
 import { getPaymentGateway } from '../../services/payment-gateway.service.js';
 import { config } from '../../config/index.js';
-import type { RecordPaymentDto, ProcessRefundDto, InitOnlinePaymentDto, SaveGatewayConfigDto, PaymentResponse, PaymentRefundResponse, PaymentGatewayConfigResponse } from './payment.types.js';
+import type {
+  RecordPaymentDto,
+  ProcessRefundDto,
+  InitOnlinePaymentDto,
+  SaveGatewayConfigDto,
+  PaymentResponse,
+  PaymentRefundResponse,
+  PaymentGatewayConfigResponse,
+} from './payment.types.js';
 
 const MAX_RETRY_ATTEMPTS = 3;
 
@@ -165,7 +173,11 @@ export async function initOnlinePayment(
     entityType: 'Payment',
     entityId: `order_${order.orderId}`,
     action: 'ONLINE_PAYMENT_INITIATED',
-    newValue: { invoiceId: dto.invoiceId, amount: Number(invoice.totalAmount.toString()), orderId: order.orderId },
+    newValue: {
+      invoiceId: dto.invoiceId,
+      amount: Number(invoice.totalAmount.toString()),
+      orderId: order.orderId,
+    },
   });
 
   return {
@@ -326,7 +338,9 @@ export async function retryFailedPayment(
 
   if (payment.attemptCount >= MAX_RETRY_ATTEMPTS) {
     await paymentRepository.updateInvoiceStatus(payment.invoiceId, agencyId, 'OVERDUE');
-    throw new ConflictError(`Payment exceeded max retry attempts (${MAX_RETRY_ATTEMPTS}). Invoice marked as OVERDUE.`);
+    throw new ConflictError(
+      `Payment exceeded max retry attempts (${MAX_RETRY_ATTEMPTS}). Invoice marked as OVERDUE.`
+    );
   }
 
   await paymentRepository.updatePaymentStatus(paymentId, agencyId, {
@@ -345,7 +359,9 @@ export async function retryFailedPayment(
     newValue: { status: 'PENDING', attemptCount: payment.attemptCount + 1 },
   });
 
-  return { message: `Payment ${paymentId} reset to PENDING. Attempt ${payment.attemptCount + 1}/${MAX_RETRY_ATTEMPTS}` };
+  return {
+    message: `Payment ${paymentId} reset to PENDING. Attempt ${payment.attemptCount + 1}/${MAX_RETRY_ATTEMPTS}`,
+  };
 }
 
 export async function handlePaymentFailure(
@@ -427,7 +443,10 @@ export async function listPayments(
   return { payments: payments.map(toPaymentResponse), total, page, pageSize };
 }
 
-export async function getInvoicePayments(invoiceId: string, agencyId: string): Promise<PaymentResponse[]> {
+export async function getInvoicePayments(
+  invoiceId: string,
+  agencyId: string
+): Promise<PaymentResponse[]> {
   const payments = await paymentRepository.findPaymentsByInvoiceId(invoiceId, agencyId);
   return payments.map(toPaymentResponse);
 }
@@ -482,7 +501,9 @@ export async function saveGatewayConfig(
   };
 }
 
-export async function getGatewayConfig(agencyId: string): Promise<PaymentGatewayConfigResponse | null> {
+export async function getGatewayConfig(
+  agencyId: string
+): Promise<PaymentGatewayConfigResponse | null> {
   const config = await paymentRepository.findGatewayConfig(agencyId);
   if (!config) return null;
   return {

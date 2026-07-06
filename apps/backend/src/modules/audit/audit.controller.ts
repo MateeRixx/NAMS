@@ -16,11 +16,7 @@ export async function listAuditLogs(
   }
 }
 
-export async function getAuditLog(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function getAuditLog(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const id = req.params['id']!;
     const result = await auditService.getAuditLog(id, req.user!.agencyId);

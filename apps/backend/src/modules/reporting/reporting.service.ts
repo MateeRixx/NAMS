@@ -67,7 +67,10 @@ export async function getRevenueReport(
   agencyId: string,
   filters: { year?: number; month?: number; productId?: string }
 ) {
-  const where: Record<string, unknown> = { agencyId, status: { in: ['PAID', 'GENERATED', 'OVERDUE'] } };
+  const where: Record<string, unknown> = {
+    agencyId,
+    status: { in: ['PAID', 'GENERATED', 'OVERDUE'] },
+  };
   if (filters.year) where['billingYear'] = filters.year;
   if (filters.month) where['billingMonth'] = filters.month;
 
@@ -76,11 +79,20 @@ export async function getRevenueReport(
     orderBy: [{ billingYear: 'desc' }, { billingMonth: 'desc' }],
   });
 
-  const byMonth: Record<string, { month: number; year: number; total: number; count: number; paid: number }> = {};
+  const byMonth: Record<
+    string,
+    { month: number; year: number; total: number; count: number; paid: number }
+  > = {};
   for (const inv of invoices) {
     const key = `${inv.billingYear}-${String(inv.billingMonth).padStart(2, '0')}`;
     if (!byMonth[key]) {
-      byMonth[key] = { month: inv.billingMonth, year: inv.billingYear, total: 0, count: 0, paid: 0 };
+      byMonth[key] = {
+        month: inv.billingMonth,
+        year: inv.billingYear,
+        total: 0,
+        count: 0,
+        paid: 0,
+      };
     }
     byMonth[key].total += Number(inv.totalAmount);
     byMonth[key].count += 1;
@@ -92,8 +104,12 @@ export async function getRevenueReport(
   );
 
   const totalRevenue = invoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-  const totalPaid = invoices.filter((i) => i.status === 'PAID').reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
-  const outstandingInvoices = invoices.filter((i) => i.status === 'PENDING' || i.status === 'OVERDUE');
+  const totalPaid = invoices
+    .filter((i) => i.status === 'PAID')
+    .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+  const outstandingInvoices = invoices.filter(
+    (i) => i.status === 'PENDING' || i.status === 'OVERDUE'
+  );
   const outstanding = outstandingInvoices.reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
   return { totalRevenue, totalPaid, outstanding, totalInvoices: invoices.length, monthly };
@@ -168,7 +184,15 @@ export async function getGrowthReport(agencyId: string) {
     orderBy: { createdAt: 'asc' },
   });
 
-  const monthly: Record<string, { month: string; newCustomers: number; newSubscriptions: number; cancelledSubscriptions: number }> = {};
+  const monthly: Record<
+    string,
+    {
+      month: string;
+      newCustomers: number;
+      newSubscriptions: number;
+      cancelledSubscriptions: number;
+    }
+  > = {};
   for (let i = 0; i < 6; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -242,7 +266,8 @@ export async function getCollectionReport(agencyId: string) {
     collectionRate,
     totalInvoices: invoices.length,
     paidInvoices: invoices.filter((i) => i.status === 'PAID').length,
-    pendingInvoices: invoices.filter((i) => i.status === 'PENDING' || i.status === 'OVERDUE').length,
+    pendingInvoices: invoices.filter((i) => i.status === 'PENDING' || i.status === 'OVERDUE')
+      .length,
     aging,
   };
 }

@@ -32,10 +32,6 @@ router.patch(
   validate(updateDeliveryZoneSchema),
   deliveryZoneController.updateDeliveryZone
 );
-router.delete(
-  '/:id',
-  authorize(UserRole.AGENCY_ADMIN),
-  deliveryZoneController.deleteDeliveryZone
-);
+router.delete('/:id', authorize(UserRole.AGENCY_ADMIN), deliveryZoneController.deleteDeliveryZone);
 
 export default router;

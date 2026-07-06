@@ -7,26 +7,24 @@ import {
   UserRole,
   type JwtPayload,
 } from '@newsflow/shared';
+import prisma from '@newsflow/database';
 import type {
   CustomerRegisterDto,
   CustomerVerifyEmailDto,
   CustomerLoginDto,
   CustomerForgotPasswordDto,
   CustomerResetPasswordDto,
-} from './auth.types.js';
-import prisma from '@newsflow/database';
-import { config } from '../../config/index.js';
-import { getRedis } from '../../config/redis.js';
-import * as authRepository from './auth.repository.js';
-import * as customerRepository from '../customer/customer.repository.js';
-import { sendEmail } from '../../services/email.service.js';
-import type {
   RegisterDto,
   LoginDto,
   AuthResponse,
   UserProfileResponse,
   CustomerAuthResponse,
 } from './auth.types.js';
+import { config } from '../../config/index.js';
+import { getRedis } from '../../config/redis.js';
+import * as authRepository from './auth.repository.js';
+import * as customerRepository from '../customer/customer.repository.js';
+import { sendEmail } from '../../services/email.service.js';
 
 function mapRole(role: string): UserRole {
   if (Object.values(UserRole).includes(role as UserRole)) {

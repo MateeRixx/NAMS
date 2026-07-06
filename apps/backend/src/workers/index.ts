@@ -1,7 +1,7 @@
+import type { Worker } from 'bullmq';
 import { getRedis } from '../config/redis.js';
 import { startNotificationWorker } from './notification.worker.js';
 import { startEmailWorker } from './email.worker.js';
-import type { Worker } from 'bullmq';
 
 const activeWorkers: Worker[] = [];
 

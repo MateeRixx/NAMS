@@ -2,7 +2,11 @@ import prisma from '@newsflow/database';
 import * as billingRepository from '../modules/billing/billing.repository.js';
 import { generateInvoice } from '../modules/billing/billing.service.js';
 
-export async function generateMonthlyInvoices(): Promise<{ success: number; skipped: number; errors: number }> {
+export async function generateMonthlyInvoices(): Promise<{
+  success: number;
+  skipped: number;
+  errors: number;
+}> {
   const now = new Date();
   const billingMonth = now.getMonth();
   const billingYear = now.getFullYear();

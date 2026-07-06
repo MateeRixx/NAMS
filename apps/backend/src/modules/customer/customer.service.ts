@@ -158,9 +158,21 @@ export async function getDeliverySheet(agencyId: string): Promise<{
   zones: {
     id: string;
     name: string;
-    customers: { name: string; phone: string | null; address: string; area: string; postalCode: string }[];
+    customers: {
+      name: string;
+      phone: string | null;
+      address: string;
+      area: string;
+      postalCode: string;
+    }[];
   }[];
-  unzoned: { name: string; phone: string | null; address: string; area: string; postalCode: string }[];
+  unzoned: {
+    name: string;
+    phone: string | null;
+    address: string;
+    area: string;
+    postalCode: string;
+  }[];
   generatedAt: string;
 }> {
   const customers = await prisma.customer.findMany({
