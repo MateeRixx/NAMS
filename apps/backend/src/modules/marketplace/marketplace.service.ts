@@ -36,7 +36,15 @@ function toDistributionResponse(d: {
   description: string | null;
   requestedQuantity: number;
   deliveryAddressId: string | null;
-  deliveryAddress?: { id: string; houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  deliveryAddress?: {
+    id: string;
+    houseNumber: string;
+    street: string;
+    area: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  } | null;
   contactPerson: string | null;
   contactPhone: string | null;
   scheduledDate: Date | null;
@@ -44,7 +52,12 @@ function toDistributionResponse(d: {
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  zones?: { id: string; deliveryZoneId: string; deliveryZone: { id: string; name: string }; quantity: number }[];
+  zones?: {
+    id: string;
+    deliveryZoneId: string;
+    deliveryZone: { id: string; name: string };
+    quantity: number;
+  }[];
 }): DistributionRequestResponse {
   return {
     id: d.id,
@@ -161,7 +174,9 @@ export async function updateDistributionRequest(
 
   if (dto.quotedPrice !== undefined) {
     if (request.status !== 'PENDING') {
-      throw new ValidationError('Cannot set quoted price after the request has moved from PENDING status');
+      throw new ValidationError(
+        'Cannot set quoted price after the request has moved from PENDING status'
+      );
     }
     updateData['quotedPrice'] = dto.quotedPrice;
     updateData['status'] = 'QUOTED';
@@ -174,7 +189,10 @@ export async function updateDistributionRequest(
     userId,
     entityType: 'DistributionRequest',
     entityId: id,
-    action: dto.quotedPrice !== undefined ? 'DISTRIBUTION_QUOTED' : `DISTRIBUTION_STATUS_CHANGED:${request.status}→${dto.status ?? request.status}`,
+    action:
+      dto.quotedPrice !== undefined
+        ? 'DISTRIBUTION_QUOTED'
+        : `DISTRIBUTION_STATUS_CHANGED:${request.status}→${dto.status ?? request.status}`,
     oldValue: { status: request.status, quotedPrice: request.quotedPrice },
     newValue: updateData as Record<string, unknown>,
   });
@@ -211,7 +229,9 @@ export async function getDistributionRequest(
   return toDistributionResponse(request);
 }
 
-export async function listDistributionRequests(agencyId: string): Promise<DistributionRequestResponse[]> {
+export async function listDistributionRequests(
+  agencyId: string
+): Promise<DistributionRequestResponse[]> {
   const requests = await marketplaceRepository.listDistributionRequests(agencyId);
   return requests.map((r) => toDistributionResponse(r));
 }
@@ -286,7 +306,9 @@ export async function updateArticleRequest(
     userId,
     entityType: 'ArticleRequest',
     entityId: id,
-    action: dto.status ? ('ARTICLE_STATUS_CHANGED:' + request.status + '->' + dto.status) : 'ARTICLE_UPDATED',
+    action: dto.status
+      ? 'ARTICLE_STATUS_CHANGED:' + request.status + '->' + dto.status
+      : 'ARTICLE_UPDATED',
     oldValue: { status: request.status, reviewNotes: request.reviewNotes },
     newValue: { status: dto.status, reviewNotes: dto.reviewNotes },
   });

@@ -1,7 +1,19 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { AuthenticationError, ConflictError, NotFoundError, UserRole, type JwtPayload } from '@newsflow/shared';
-import type { CustomerRegisterDto, CustomerVerifyEmailDto, CustomerLoginDto, CustomerForgotPasswordDto, CustomerResetPasswordDto } from './auth.types.js';
+import {
+  AuthenticationError,
+  ConflictError,
+  NotFoundError,
+  UserRole,
+  type JwtPayload,
+} from '@newsflow/shared';
+import type {
+  CustomerRegisterDto,
+  CustomerVerifyEmailDto,
+  CustomerLoginDto,
+  CustomerForgotPasswordDto,
+  CustomerResetPasswordDto,
+} from './auth.types.js';
 import prisma from '@newsflow/database';
 import { config } from '../../config/index.js';
 import { getRedis } from '../../config/redis.js';
@@ -192,7 +204,9 @@ export async function verifyOtp(phone: string, otp: string): Promise<AuthRespons
   };
 }
 
-export async function customerRegister(dto: CustomerRegisterDto): Promise<{ message: string; otp?: string }> {
+export async function customerRegister(
+  dto: CustomerRegisterDto
+): Promise<{ message: string; otp?: string }> {
   const agency = await prisma.agency.findFirst();
   if (!agency) {
     throw new NotFoundError('Agency');
@@ -248,7 +262,9 @@ export async function customerRegister(dto: CustomerRegisterDto): Promise<{ mess
   return { message: 'Account created. Please check your email for the verification OTP.' };
 }
 
-export async function customerVerifyEmail(dto: CustomerVerifyEmailDto): Promise<CustomerAuthResponse> {
+export async function customerVerifyEmail(
+  dto: CustomerVerifyEmailDto
+): Promise<CustomerAuthResponse> {
   const redis = getRedis();
   const storedOtp = await redis.get(`otp:email:${dto.email}`);
 
@@ -259,7 +275,9 @@ export async function customerVerifyEmail(dto: CustomerVerifyEmailDto): Promise<
   await redis.del(`otp:email:${dto.email}`);
 
   const agency = await prisma.agency.findFirst();
-  const customer = agency ? await customerRepository.findCustomerByEmail(dto.email, agency.id) : null;
+  const customer = agency
+    ? await customerRepository.findCustomerByEmail(dto.email, agency.id)
+    : null;
 
   if (!customer) {
     throw new NotFoundError('Customer');
@@ -302,11 +320,15 @@ export async function customerLogin(dto: CustomerLoginDto): Promise<CustomerAuth
   }
 
   if (!customer.password) {
-    throw new AuthenticationError('This account was created without a password. Please reset your password.');
+    throw new AuthenticationError(
+      'This account was created without a password. Please reset your password.'
+    );
   }
 
   if (!customer.emailVerifiedAt) {
-    throw new AuthenticationError('Email not verified. Please check your email for the verification OTP.');
+    throw new AuthenticationError(
+      'Email not verified. Please check your email for the verification OTP.'
+    );
   }
 
   if (!(await bcrypt.compare(dto.password, customer.password))) {
@@ -337,7 +359,9 @@ export async function customerLogin(dto: CustomerLoginDto): Promise<CustomerAuth
   };
 }
 
-export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Promise<{ message: string; otp?: string }> {
+export async function customerForgotPassword(
+  dto: CustomerForgotPasswordDto
+): Promise<{ message: string; otp?: string }> {
   const agency = await prisma.agency.findFirst();
   if (!agency) throw new NotFoundError('Agency');
 
@@ -375,7 +399,9 @@ export async function customerForgotPassword(dto: CustomerForgotPasswordDto): Pr
   return { message: 'If an account with that email exists, an OTP has been sent.' };
 }
 
-export async function customerResetPassword(dto: CustomerResetPasswordDto): Promise<{ message: string }> {
+export async function customerResetPassword(
+  dto: CustomerResetPasswordDto
+): Promise<{ message: string }> {
   const redis = getRedis();
   const storedOtp = await redis.get(`otp:reset:${dto.email}`);
 

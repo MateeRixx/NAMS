@@ -13,7 +13,17 @@ export async function listMyDistributionRequests(customerId: string, agencyId: s
     orderBy: { createdAt: 'desc' },
     include: {
       zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
-      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+      deliveryAddress: {
+        select: {
+          id: true,
+          houseNumber: true,
+          street: true,
+          area: true,
+          city: true,
+          state: true,
+          postalCode: true,
+        },
+      },
     },
   });
 }
@@ -21,7 +31,16 @@ export async function listMyDistributionRequests(customerId: string, agencyId: s
 export async function createMyDistributionRequest(
   customerId: string,
   agencyId: string,
-  data: { title: string; description?: string; requestedQuantity: number; deliveryAddressId?: string; contactPerson?: string; contactPhone?: string; scheduledDate?: string; zones?: { deliveryZoneId: string; quantity: number }[] }
+  data: {
+    title: string;
+    description?: string;
+    requestedQuantity: number;
+    deliveryAddressId?: string;
+    contactPerson?: string;
+    contactPhone?: string;
+    scheduledDate?: string;
+    zones?: { deliveryZoneId: string; quantity: number }[];
+  }
 ) {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
@@ -51,7 +70,17 @@ export async function createMyDistributionRequest(
     },
     include: {
       zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
-      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+      deliveryAddress: {
+        select: {
+          id: true,
+          houseNumber: true,
+          street: true,
+          area: true,
+          city: true,
+          state: true,
+          postalCode: true,
+        },
+      },
     },
   });
 

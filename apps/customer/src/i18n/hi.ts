@@ -26,7 +26,8 @@ const hi: Record<string, string> = {
   cart_pay: 'अब भुगतान करें — ₹{amount}',
   cart_processing: 'प्रोसेसिंग...',
   cart_estimate_note_title: 'पहला बिल कम क्यों है?',
-  cart_estimate_note_body: 'पहला चालान केवल {month} के बचे हुए {days} दिनों के लिए है। अगले महीने से पूरा मासिक भुगतान होगा।',
+  cart_estimate_note_body:
+    'पहला चालान केवल {month} के बचे हुए {days} दिनों के लिए है। अगले महीने से पूरा मासिक भुगतान होगा।',
   cart_sub_note: 'सदस्यता बनाई जाएगी और भुगतान Razorpay के माध्यम से होगा',
 
   products_title: 'उपलब्ध उत्पाद',
@@ -55,7 +56,8 @@ const hi: Record<string, string> = {
   subs_resume: 'डिलीवरी फिर से शुरू करें',
   subs_pause_history: 'रोकने का इतिहास',
   subs_confirm_cancel_title: 'सदस्यता रद्द करें',
-  subs_confirm_cancel_body: 'इस महीने के उपयोग किए गए दिनों के लिए अंतिम चालान बनाया जाएगा। इसे पूर्ववत नहीं किया जा सकता।',
+  subs_confirm_cancel_body:
+    'इस महीने के उपयोग किए गए दिनों के लिए अंतिम चालान बनाया जाएगा। इसे पूर्ववत नहीं किया जा सकता।',
   subs_keep: 'सदस्यता रखें',
   subs_yes_cancel: 'हाँ, रद्द करें',
   subs_cancelling: 'रद्द हो रहा है...',
@@ -88,7 +90,8 @@ const hi: Record<string, string> = {
   payment_failed: 'भुगतान विफल',
 
   prorated_title: 'पहला बिल कम क्यों है?',
-  prorated_body: 'पहला चालान केवल {month} के बचे हुए {days} दिनों के लिए है। अगले महीने से पूरा मासिक भुगतान होगा (उत्पाद + डिलीवरी + जीएसटी)।',
+  prorated_body:
+    'पहला चालान केवल {month} के बचे हुए {days} दिनों के लिए है। अगले महीने से पूरा मासिक भुगतान होगा (उत्पाद + डिलीवरी + जीएसटी)।',
 
   lang_en: 'English',
   lang_hi: 'हिन्दी',

@@ -1,9 +1,22 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
 
-interface DeliveryZone { id: string; name: string; }
+interface DeliveryZone {
+  id: string;
+  name: string;
+}
 
-interface Address { id: string; houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string; isPrimary: boolean; zone?: { name: string } | null; }
+interface Address {
+  id: string;
+  houseNumber: string;
+  street: string;
+  area: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  isPrimary: boolean;
+  zone?: { name: string } | null;
+}
 
 interface DistZone {
   id: string;
@@ -17,7 +30,14 @@ interface DistributionRequest {
   title: string;
   description: string | null;
   requestedQuantity: number;
-  deliveryAddress?: { houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  deliveryAddress?: {
+    houseNumber: string;
+    street: string;
+    area: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  } | null;
   contactPerson: string | null;
   contactPhone: string | null;
   scheduledDate: string | null;
@@ -39,7 +59,11 @@ interface ArticleRequest {
   product?: { name: string } | null;
 }
 
-interface Product { id: string; name: string; type: string; }
+interface Product {
+  id: string;
+  name: string;
+  type: string;
+}
 
 const distStatusColor: Record<string, string> = {
   PENDING: '#f59e0b',
@@ -108,7 +132,9 @@ export default function Marketplace() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   function resetDistForm() {
     setShowDistForm(false);
@@ -123,8 +149,14 @@ export default function Marketplace() {
   }
 
   async function handleCreateDist() {
-    if (!distTitle) { setDistError('Title is required'); return; }
-    if (totalQuantity === 0) { setDistError('Enter quantity for at least one area'); return; }
+    if (!distTitle) {
+      setDistError('Title is required');
+      return;
+    }
+    if (totalQuantity === 0) {
+      setDistError('Enter quantity for at least one area');
+      return;
+    }
     setDistSubmitting(true);
     setDistError('');
     try {
@@ -151,7 +183,10 @@ export default function Marketplace() {
   }
 
   async function handleCreateArticle() {
-    if (!articleTitle || !articleContent) { setArticleError('Title and content are required'); return; }
+    if (!articleTitle || !articleContent) {
+      setArticleError('Title and content are required');
+      return;
+    }
     setArticleSubmitting(true);
     setArticleError('');
     try {
@@ -183,17 +218,27 @@ export default function Marketplace() {
       </div>
 
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button className={`btn ${tab === 'distribution' ? 'btn-primary' : 'btn-sm'}`} onClick={() => setTab('distribution')}>
+        <button
+          className={`btn ${tab === 'distribution' ? 'btn-primary' : 'btn-sm'}`}
+          onClick={() => setTab('distribution')}
+        >
           Pamphlet Distribution
         </button>
-        <button className={`btn ${tab === 'article' ? 'btn-primary' : 'btn-sm'}`} onClick={() => setTab('article')}>
+        <button
+          className={`btn ${tab === 'article' ? 'btn-primary' : 'btn-sm'}`}
+          onClick={() => setTab('article')}
+        >
           Article Publication
         </button>
       </div>
 
       {tab === 'distribution' && (
         <>
-          <button className="btn btn-sm btn-primary" style={{ marginBottom: '1rem' }} onClick={() => setShowDistForm(!showDistForm)}>
+          <button
+            className="btn btn-sm btn-primary"
+            style={{ marginBottom: '1rem' }}
+            onClick={() => setShowDistForm(!showDistForm)}
+          >
             {showDistForm ? 'Cancel' : 'Request Pamphlet Distribution'}
           </button>
 
@@ -202,20 +247,35 @@ export default function Marketplace() {
               <h3 style={{ marginBottom: '0.75rem' }}>New Distribution Request</h3>
               <div className="input-group">
                 <label>Title</label>
-                <input className="input" placeholder="e.g. Festival Sale Pamphlet" value={distTitle} onChange={(e) => setDistTitle(e.target.value)} />
+                <input
+                  className="input"
+                  placeholder="e.g. Festival Sale Pamphlet"
+                  value={distTitle}
+                  onChange={(e) => setDistTitle(e.target.value)}
+                />
               </div>
               <div className="input-group">
                 <label>Description (optional)</label>
-                <textarea className="textarea" placeholder="Any specific instructions..." value={distDescription} onChange={(e) => setDistDescription(e.target.value)} />
+                <textarea
+                  className="textarea"
+                  placeholder="Any specific instructions..."
+                  value={distDescription}
+                  onChange={(e) => setDistDescription(e.target.value)}
+                />
               </div>
               <div className="input-group">
                 <label>Select Areas &amp; Quantities</label>
                 {zones.length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No delivery zones available. Contact admin.</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    No delivery zones available. Contact admin.
+                  </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {zones.map((z) => (
-                      <div key={z.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div
+                        key={z.id}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}
+                      >
                         <span style={{ minWidth: '140px', fontSize: '0.9rem' }}>{z.name}</span>
                         <input
                           className="input"
@@ -224,7 +284,12 @@ export default function Marketplace() {
                           placeholder="Qty"
                           style={{ width: '100px' }}
                           value={zoneQty[z.id] ?? ''}
-                          onChange={(e) => setZoneQty((p) => ({ ...p, [z.id]: e.target.value ? Number(e.target.value) : 0 }))}
+                          onChange={(e) =>
+                            setZoneQty((p) => ({
+                              ...p,
+                              [z.id]: e.target.value ? Number(e.target.value) : 0,
+                            }))
+                          }
                         />
                       </div>
                     ))}
@@ -233,7 +298,11 @@ export default function Marketplace() {
               </div>
               <div className="input-group">
                 <label>Delivery Address</label>
-                <select className="select" value={distAddressId} onChange={(e) => setDistAddressId(e.target.value)}>
+                <select
+                  className="select"
+                  value={distAddressId}
+                  onChange={(e) => setDistAddressId(e.target.value)}
+                >
                   <option value="">-- Select Address --</option>
                   {addresses.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -245,20 +314,41 @@ export default function Marketplace() {
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <div className="input-group" style={{ flex: 1 }}>
                   <label>Contact Person</label>
-                  <input className="input" placeholder="Name" value={distContactPerson} onChange={(e) => setDistContactPerson(e.target.value)} />
+                  <input
+                    className="input"
+                    placeholder="Name"
+                    value={distContactPerson}
+                    onChange={(e) => setDistContactPerson(e.target.value)}
+                  />
                 </div>
                 <div className="input-group" style={{ flex: 1 }}>
                   <label>Contact Phone</label>
-                  <input className="input" placeholder="Phone" value={distContactPhone} onChange={(e) => setDistContactPhone(e.target.value)} />
+                  <input
+                    className="input"
+                    placeholder="Phone"
+                    value={distContactPhone}
+                    onChange={(e) => setDistContactPhone(e.target.value)}
+                  />
                 </div>
               </div>
               <div className="input-group">
                 <label>Scheduled Date</label>
-                <input className="input" type="date" value={distScheduledDate} onChange={(e) => setDistScheduledDate(e.target.value)} />
+                <input
+                  className="input"
+                  type="date"
+                  value={distScheduledDate}
+                  onChange={(e) => setDistScheduledDate(e.target.value)}
+                />
               </div>
-              <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>Total: {totalQuantity} pamphlets</p>
+              <p style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                Total: {totalQuantity} pamphlets
+              </p>
               {distError && <p className="error-text">{distError}</p>}
-              <button className="btn btn-primary btn-block" onClick={handleCreateDist} disabled={distSubmitting}>
+              <button
+                className="btn btn-primary btn-block"
+                onClick={handleCreateDist}
+                disabled={distSubmitting}
+              >
                 {distSubmitting ? 'Submitting...' : 'Submit Request'}
               </button>
             </div>
@@ -273,37 +363,93 @@ export default function Marketplace() {
             <div>
               {distRequests.map((d) => (
                 <div key={d.id} className="card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '0.25rem',
+                    }}
+                  >
                     <div>
                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{d.title}</span>
                     </div>
-                    <span className="badge" style={{ backgroundColor: distStatusColor[d.status] || '#6b7280', color: '#fff' }}>
+                    <span
+                      className="badge"
+                      style={{
+                        backgroundColor: distStatusColor[d.status] || '#6b7280',
+                        color: '#fff',
+                      }}
+                    >
                       {d.status}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
+                  <div
+                    style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}
+                  >
                     Total: {d.requestedQuantity} pamphlets
                     {d.quotedPrice != null && <> &middot; Quoted: ₹{d.quotedPrice}</>}
                   </div>
                   {d.zones && d.zones.length > 0 && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        color: 'var(--text-muted)',
+                        margin: '0.25rem 0',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                      }}
+                    >
                       {d.zones.map((z) => (
-                        <span key={z.id} style={{ background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                        <span
+                          key={z.id}
+                          style={{
+                            background: '#f1f5f9',
+                            padding: '0.15rem 0.5rem',
+                            borderRadius: '4px',
+                          }}
+                        >
                           {z.deliveryZone.name}: {z.quantity}
                         </span>
                       ))}
                     </div>
                   )}
-                  {d.description && <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{d.description}</p>}
+                  {d.description && (
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                      {d.description}
+                    </p>
+                  )}
                   {(d.contactPerson || d.contactPhone || d.scheduledDate || d.deliveryAddress) && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        color: 'var(--text-muted)',
+                        margin: '0.25rem 0',
+                      }}
+                    >
                       {d.contactPerson && <span>Contact: {d.contactPerson} </span>}
                       {d.contactPhone && <span>&middot; {d.contactPhone} </span>}
-                      {d.scheduledDate && <span>&middot; Schedule: {new Date(d.scheduledDate).toLocaleDateString()}</span>}
-                      {d.deliveryAddress && <span>&middot; {d.deliveryAddress.houseNumber}, {d.deliveryAddress.area}, {d.deliveryAddress.city}</span>}
+                      {d.scheduledDate && (
+                        <span>
+                          &middot; Schedule: {new Date(d.scheduledDate).toLocaleDateString()}
+                        </span>
+                      )}
+                      {d.deliveryAddress && (
+                        <span>
+                          &middot; {d.deliveryAddress.houseNumber}, {d.deliveryAddress.area},{' '}
+                          {d.deliveryAddress.city}
+                        </span>
+                      )}
                     </div>
                   )}
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--text-muted)',
+                      marginTop: '0.25rem',
+                    }}
+                  >
                     {new Date(d.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -315,7 +461,11 @@ export default function Marketplace() {
 
       {tab === 'article' && (
         <>
-          <button className="btn btn-sm btn-primary" style={{ marginBottom: '1rem' }} onClick={() => setShowArticleForm(!showArticleForm)}>
+          <button
+            className="btn btn-sm btn-primary"
+            style={{ marginBottom: '1rem' }}
+            onClick={() => setShowArticleForm(!showArticleForm)}
+          >
             {showArticleForm ? 'Cancel' : 'Submit Article'}
           </button>
 
@@ -324,27 +474,55 @@ export default function Marketplace() {
               <h3 style={{ marginBottom: '0.75rem' }}>New Article Submission</h3>
               <div className="input-group">
                 <label>Newspaper</label>
-                <select className="select" value={articleProductId} onChange={(e) => setArticleProductId(e.target.value)}>
+                <select
+                  className="select"
+                  value={articleProductId}
+                  onChange={(e) => setArticleProductId(e.target.value)}
+                >
                   <option value="">-- Select Newspaper --</option>
-                  {products.filter((p) => p.type === 'NEWSPAPER').map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {products
+                    .filter((p) => p.type === 'NEWSPAPER')
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
                 </select>
               </div>
               <div className="input-group">
                 <label>Title</label>
-                <input className="input" placeholder="Article title" value={articleTitle} onChange={(e) => setArticleTitle(e.target.value)} />
+                <input
+                  className="input"
+                  placeholder="Article title"
+                  value={articleTitle}
+                  onChange={(e) => setArticleTitle(e.target.value)}
+                />
               </div>
               <div className="input-group">
                 <label>Content</label>
-                <textarea className="textarea" rows={6} placeholder="Write your article, notice, or advertisement here..." value={articleContent} onChange={(e) => setArticleContent(e.target.value)} />
+                <textarea
+                  className="textarea"
+                  rows={6}
+                  placeholder="Write your article, notice, or advertisement here..."
+                  value={articleContent}
+                  onChange={(e) => setArticleContent(e.target.value)}
+                />
               </div>
               <div className="input-group">
                 <label>Publish Date</label>
-                <input className="input" type="date" value={articlePublishDate} onChange={(e) => setArticlePublishDate(e.target.value)} />
+                <input
+                  className="input"
+                  type="date"
+                  value={articlePublishDate}
+                  onChange={(e) => setArticlePublishDate(e.target.value)}
+                />
               </div>
               {articleError && <p className="error-text">{articleError}</p>}
-              <button className="btn btn-primary btn-block" onClick={handleCreateArticle} disabled={articleSubmitting}>
+              <button
+                className="btn btn-primary btn-block"
+                onClick={handleCreateArticle}
+                disabled={articleSubmitting}
+              >
                 {articleSubmitting ? 'Submitting...' : 'Submit for Review'}
               </button>
             </div>
@@ -359,27 +537,70 @@ export default function Marketplace() {
             <div>
               {articleRequests.map((a) => (
                 <div key={a.id} className="card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: '0.25rem',
+                    }}
+                  >
                     <div>
                       <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{a.title}</span>
                     </div>
-                    <span className="badge" style={{ backgroundColor: articleStatusColor[a.status] || '#6b7280', color: '#fff' }}>
+                    <span
+                      className="badge"
+                      style={{
+                        backgroundColor: articleStatusColor[a.status] || '#6b7280',
+                        color: '#fff',
+                      }}
+                    >
                       {a.status}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}>
-                    {a.product?.name && <><strong>Newspaper:</strong> {a.product.name} &middot; </>}
-                    {a.publishInDate && <><strong>Publish:</strong> {new Date(a.publishInDate).toLocaleDateString()}</>}
+                  <div
+                    style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0.25rem 0' }}
+                  >
+                    {a.product?.name && (
+                      <>
+                        <strong>Newspaper:</strong> {a.product.name} &middot;{' '}
+                      </>
+                    )}
+                    {a.publishInDate && (
+                      <>
+                        <strong>Publish:</strong> {new Date(a.publishInDate).toLocaleDateString()}
+                      </>
+                    )}
                   </div>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: '0.25rem 0', whiteSpace: 'pre-wrap' }}>
-                    {a.content.substring(0, 150)}{a.content.length > 150 ? '...' : ''}
+                  <p
+                    style={{
+                      fontSize: '0.85rem',
+                      color: 'var(--text-muted)',
+                      margin: '0.25rem 0',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {a.content.substring(0, 150)}
+                    {a.content.length > 150 ? '...' : ''}
                   </p>
                   {a.reviewNotes && (
-                    <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                    <p
+                      style={{
+                        fontSize: '0.8rem',
+                        fontStyle: 'italic',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
                       Review: {a.reviewNotes}
                     </p>
                   )}
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--text-muted)',
+                      marginTop: '0.25rem',
+                    }}
+                  >
                     {new Date(a.createdAt).toLocaleDateString()}
                   </div>
                 </div>

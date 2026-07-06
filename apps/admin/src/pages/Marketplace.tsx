@@ -15,7 +15,14 @@ interface DistributionRequest {
   title: string;
   description: string | null;
   requestedQuantity: number;
-  deliveryAddress?: { houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  deliveryAddress?: {
+    houseNumber: string;
+    street: string;
+    area: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  } | null;
   contactPerson: string | null;
   contactPhone: string | null;
   scheduledDate: string | null;
@@ -62,20 +69,27 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [selectedDist, setSelectedDist] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
-  const [promptModal, setPromptModal] = useState<{ type: 'price' | 'notes' | 'reject'; requestId: string } | null>(null);
+  const [promptModal, setPromptModal] = useState<{
+    type: 'price' | 'notes' | 'reject';
+    requestId: string;
+  } | null>(null);
 
   function loadAll() {
     setLoading(true);
     Promise.all([
       client.get('/marketplace/distribution-requests'),
       client.get('/marketplace/article-requests'),
-    ]).then(([distRes, articleRes]) => {
-      setDistRequests(distRes.data.data);
-      setArticleRequests(articleRes.data.data);
-    }).finally(() => setLoading(false));
+    ])
+      .then(([distRes, articleRes]) => {
+        setDistRequests(distRes.data.data);
+        setArticleRequests(articleRes.data.data);
+      })
+      .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    loadAll();
+  }, []);
 
   async function updateDist(id: string, data: Record<string, unknown>) {
     await client.patch(`/marketplace/distribution-requests/${id}`, data);
@@ -133,13 +147,19 @@ export default function Marketplace() {
                   </td>
                   <td>{d.quotedPrice != null ? `₹${d.quotedPrice}` : '-'}</td>
                   <td>
-                    <span className="badge" style={{ backgroundColor: distStatusColor[d.status] || '#6b7280' }}>
+                    <span
+                      className="badge"
+                      style={{ backgroundColor: distStatusColor[d.status] || '#6b7280' }}
+                    >
                       {d.status}
                     </span>
                   </td>
                   <td>{new Date(d.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button className="btn btn-sm" onClick={() => setSelectedDist(selectedDist === d.id ? null : d.id)}>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => setSelectedDist(selectedDist === d.id ? null : d.id)}
+                    >
                       {selectedDist === d.id ? 'Close' : 'Manage'}
                     </button>
                   </td>
@@ -149,36 +169,80 @@ export default function Marketplace() {
                     <td colSpan={7}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        {d.status === 'PENDING' && (
-                          <>
-                            <button className="btn btn-sm btn-primary" onClick={() => setPromptModal({ type: 'price', requestId: d.id })}>
-                              Provide Quotation
+                          {d.status === 'PENDING' && (
+                            <>
+                              <button
+                                className="btn btn-sm btn-primary"
+                                onClick={() => setPromptModal({ type: 'price', requestId: d.id })}
+                              >
+                                Provide Quotation
+                              </button>
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => updateDist(d.id, { status: 'CANCELLED' })}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                          {d.status === 'APPROVED' && (
+                            <button
+                              className="btn btn-sm btn-primary"
+                              onClick={() => updateDist(d.id, { status: 'IN_PROGRESS' })}
+                            >
+                              Start Distribution
                             </button>
-                            <button className="btn btn-sm btn-danger" onClick={() => updateDist(d.id, { status: 'CANCELLED' })}>
-                              Cancel
+                          )}
+                          {d.status === 'IN_PROGRESS' && (
+                            <button
+                              className="btn btn-sm btn-primary"
+                              onClick={() => updateDist(d.id, { status: 'COMPLETED' })}
+                            >
+                              Mark Completed
                             </button>
-                          </>
-                        )}
-                        {d.status === 'APPROVED' && (
-                          <button className="btn btn-sm btn-primary" onClick={() => updateDist(d.id, { status: 'IN_PROGRESS' })}>
-                            Start Distribution
-                          </button>
-                        )}
-                        {d.status === 'IN_PROGRESS' && (
-                          <button className="btn btn-sm btn-primary" onClick={() => updateDist(d.id, { status: 'COMPLETED' })}>
-                            Mark Completed
-                          </button>
-                        )}
-                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.25rem' }}>
-                          {d.description && <>Description: {d.description}<br /></>}
-                        </span>
+                          )}
+                          <span
+                            style={{
+                              fontSize: '0.85rem',
+                              color: 'var(--text-muted)',
+                              padding: '0.25rem',
+                            }}
+                          >
+                            {d.description && (
+                              <>
+                                Description: {d.description}
+                                <br />
+                              </>
+                            )}
+                          </span>
                         </div>
-                        {(d.contactPerson || d.contactPhone || d.scheduledDate || d.deliveryAddress) && (
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.25rem', borderTop: '1px solid var(--border)' }}>
+                        {(d.contactPerson ||
+                          d.contactPhone ||
+                          d.scheduledDate ||
+                          d.deliveryAddress) && (
+                          <div
+                            style={{
+                              fontSize: '0.85rem',
+                              color: 'var(--text-muted)',
+                              padding: '0.25rem',
+                              borderTop: '1px solid var(--border)',
+                            }}
+                          >
                             {d.contactPerson && <>Contact: {d.contactPerson}</>}
                             {d.contactPhone && <> &middot; {d.contactPhone}</>}
-                            {d.scheduledDate && <> &middot; Schedule: {new Date(d.scheduledDate).toLocaleDateString()}</>}
-                            {d.deliveryAddress && <> &middot; Address: {d.deliveryAddress.houseNumber}, {d.deliveryAddress.area}, {d.deliveryAddress.city}</>}
+                            {d.scheduledDate && (
+                              <>
+                                {' '}
+                                &middot; Schedule: {new Date(d.scheduledDate).toLocaleDateString()}
+                              </>
+                            )}
+                            {d.deliveryAddress && (
+                              <>
+                                {' '}
+                                &middot; Address: {d.deliveryAddress.houseNumber},{' '}
+                                {d.deliveryAddress.area}, {d.deliveryAddress.city}
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
@@ -189,7 +253,10 @@ export default function Marketplace() {
             ))}
             {distRequests.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td
+                  colSpan={7}
+                  style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}
+                >
                   No distribution requests yet
                 </td>
               </tr>
@@ -220,7 +287,10 @@ export default function Marketplace() {
         placeholder="Add notes..."
         confirmLabel="Approve"
         onConfirm={(val) => {
-          updateArticle(promptModal!.requestId, { status: 'APPROVED', reviewNotes: val || undefined });
+          updateArticle(promptModal!.requestId, {
+            status: 'APPROVED',
+            reviewNotes: val || undefined,
+          });
           setPromptModal(null);
         }}
         onCancel={() => setPromptModal(null)}
@@ -233,7 +303,10 @@ export default function Marketplace() {
         placeholder="Enter reason..."
         confirmLabel="Reject"
         onConfirm={(val) => {
-          updateArticle(promptModal!.requestId, { status: 'REJECTED', reviewNotes: val || undefined });
+          updateArticle(promptModal!.requestId, {
+            status: 'REJECTED',
+            reviewNotes: val || undefined,
+          });
           setPromptModal(null);
         }}
         onCancel={() => setPromptModal(null)}
@@ -259,13 +332,19 @@ export default function Marketplace() {
                   <td>{a.product?.name || '-'}</td>
                   <td>{a.publishInDate ? new Date(a.publishInDate).toLocaleDateString() : '-'}</td>
                   <td>
-                    <span className="badge" style={{ backgroundColor: articleStatusColor[a.status] || '#6b7280' }}>
+                    <span
+                      className="badge"
+                      style={{ backgroundColor: articleStatusColor[a.status] || '#6b7280' }}
+                    >
                       {a.status}
                     </span>
                   </td>
                   <td>{new Date(a.createdAt).toLocaleDateString()}</td>
                   <td>
-                    <button className="btn btn-sm" onClick={() => setSelectedArticle(selectedArticle === a.id ? null : a.id)}>
+                    <button
+                      className="btn btn-sm"
+                      onClick={() => setSelectedArticle(selectedArticle === a.id ? null : a.id)}
+                    >
                       {selectedArticle === a.id ? 'Close' : 'Manage'}
                     </button>
                   </td>
@@ -273,29 +352,56 @@ export default function Marketplace() {
                 {selectedArticle === a.id && (
                   <tr key={`${a.id}-actions`}>
                     <td colSpan={6}>
-                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: '0.5rem',
+                          flexWrap: 'wrap',
+                          alignItems: 'flex-start',
+                        }}
+                      >
                         {a.status === 'SUBMITTED' && (
-                          <button className="btn btn-sm btn-primary" onClick={() => updateArticle(a.id, { status: 'UNDER_REVIEW' })}>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => updateArticle(a.id, { status: 'UNDER_REVIEW' })}
+                          >
                             Start Review
                           </button>
                         )}
                         {a.status === 'UNDER_REVIEW' && (
                           <>
-                            <button className="btn btn-sm btn-primary" onClick={() => setPromptModal({ type: 'notes', requestId: a.id })}>
+                            <button
+                              className="btn btn-sm btn-primary"
+                              onClick={() => setPromptModal({ type: 'notes', requestId: a.id })}
+                            >
                               Approve
                             </button>
-                            <button className="btn btn-sm btn-danger" onClick={() => setPromptModal({ type: 'reject', requestId: a.id })}>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              onClick={() => setPromptModal({ type: 'reject', requestId: a.id })}
+                            >
                               Reject
                             </button>
                           </>
                         )}
                         {a.status === 'APPROVED' && (
-                          <button className="btn btn-sm btn-primary" onClick={() => updateArticle(a.id, { status: 'PUBLISHED' })}>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            onClick={() => updateArticle(a.id, { status: 'PUBLISHED' })}
+                          >
                             Mark Published
                           </button>
                         )}
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', maxWidth: '400px', whiteSpace: 'pre-wrap' }}>
-                          <strong>Content:</strong> {a.content.substring(0, 200)}{a.content.length > 200 ? '...' : ''}
+                        <div
+                          style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--text-muted)',
+                            maxWidth: '400px',
+                            whiteSpace: 'pre-wrap',
+                          }}
+                        >
+                          <strong>Content:</strong> {a.content.substring(0, 200)}
+                          {a.content.length > 200 ? '...' : ''}
                         </div>
                       </div>
                     </td>
@@ -305,7 +411,10 @@ export default function Marketplace() {
             ))}
             {articleRequests.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <td
+                  colSpan={6}
+                  style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}
+                >
                   No article requests yet
                 </td>
               </tr>

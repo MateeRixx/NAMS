@@ -28,7 +28,15 @@ export interface DistributionRequestResponse {
   description: string | null;
   requestedQuantity: number;
   deliveryAddressId: string | null;
-  deliveryAddress?: { id: string; houseNumber: string; street: string; area: string; city: string; state: string; postalCode: string } | null;
+  deliveryAddress?: {
+    id: string;
+    houseNumber: string;
+    street: string;
+    area: string;
+    city: string;
+    state: string;
+    postalCode: string;
+  } | null;
   contactPerson: string | null;
   contactPhone: string | null;
   scheduledDate: Date | null;
@@ -36,7 +44,12 @@ export interface DistributionRequestResponse {
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  zones?: { id: string; deliveryZoneId: string; deliveryZone: { id: string; name: string }; quantity: number }[];
+  zones?: {
+    id: string;
+    deliveryZoneId: string;
+    deliveryZone: { id: string; name: string };
+    quantity: number;
+  }[];
 }
 
 export interface CreateArticleRequestDto {

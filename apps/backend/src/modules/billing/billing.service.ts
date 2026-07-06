@@ -230,7 +230,11 @@ export async function generateInvoice(
     const dayRate = await billingRepository.findDayRateForProduct(sub.productId, dayOfWeek);
     const creditAmount = dayRate ?? Number(sub.product.basePrice.toString());
     const roundedCredit = Math.round(creditAmount * 100) / 100;
-    const dateStr = dateForRate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = dateForRate.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
     invoiceItems.push({
       productId: sub.productId,
       description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${sub.product.name})`,
@@ -330,7 +334,12 @@ export async function generateInvoice(
     entityType: 'Invoice',
     entityId: invoice!.id,
     action: 'INVOICE_GENERATED',
-    newValue: { invoiceNumber, totalAmount, billingMonth: dto.billingMonth, billingYear: dto.billingYear },
+    newValue: {
+      invoiceNumber,
+      totalAmount,
+      billingMonth: dto.billingMonth,
+      billingYear: dto.billingYear,
+    },
   });
 
   return toInvoiceResponse(invoice!);
@@ -547,7 +556,8 @@ export async function generateCancellationInvoice(
     return null;
   }
 
-  const productSubtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
+  const productSubtotal =
+    Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
   const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
   for (const charge of activeCharges) {
     const chargeAmount =
@@ -588,7 +598,11 @@ export async function generateCancellationInvoice(
     const dayRate = await billingRepository.findDayRateForProduct(sub.productId, dayOfWeek);
     const creditAmount = dayRate ?? Number(sub.product.basePrice.toString());
     const roundedCredit = Math.round(creditAmount * 100) / 100;
-    const dateStr = dateForRate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const dateStr = dateForRate.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
     invoiceItems.push({
       productId: sub.productId,
       description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${sub.product.name})`,

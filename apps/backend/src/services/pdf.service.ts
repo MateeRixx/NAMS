@@ -90,14 +90,34 @@ function drawTableRow(
   return y + rowHeight;
 }
 
-function drawLabelValue(doc: typeof PDFDocument.prototype, x: number, y: number, label: string, value: string): number {
+function drawLabelValue(
+  doc: typeof PDFDocument.prototype,
+  x: number,
+  y: number,
+  label: string,
+  value: string
+): number {
   doc.fontSize(8).fillColor(COLORS.muted).font('Helvetica').text(label, x, y);
-  doc.fontSize(FONT_SIZE).fillColor(COLORS.text).font('Helvetica').text(value, x, y + 12);
+  doc
+    .fontSize(FONT_SIZE)
+    .fillColor(COLORS.text)
+    .font('Helvetica')
+    .text(value, x, y + 12);
   return y + 32;
 }
 
-function wrapText(doc: typeof PDFDocument.prototype, text: string, x: number, y: number, width: number): number {
-  doc.fontSize(FONT_SIZE).fillColor(COLORS.text).font('Helvetica').text(text, x, y, { width, align: 'left' });
+function wrapText(
+  doc: typeof PDFDocument.prototype,
+  text: string,
+  x: number,
+  y: number,
+  width: number
+): number {
+  doc
+    .fontSize(FONT_SIZE)
+    .fillColor(COLORS.text)
+    .font('Helvetica')
+    .text(text, x, y, { width, align: 'left' });
   return doc.y;
 }
 
@@ -123,12 +143,28 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
 
     // Header row
     let y = MARGIN + 30;
-    doc.fillColor(COLORS.primary).font('Helvetica-Bold').fontSize(22).text(data.agencyName, MARGIN, y);
+    doc
+      .fillColor(COLORS.primary)
+      .font('Helvetica-Bold')
+      .fontSize(22)
+      .text(data.agencyName, MARGIN, y);
 
-    const statusBadgeColors: Record<string, string> = { PAID: COLORS.success, GENERATED: COLORS.primary, PENDING: COLORS.warning, OVERDUE: COLORS.danger };
+    const statusBadgeColors: Record<string, string> = {
+      PAID: COLORS.success,
+      GENERATED: COLORS.primary,
+      PENDING: COLORS.warning,
+      OVERDUE: COLORS.danger,
+    };
     const badgeColor = statusBadgeColors[data.invoiceStatus] ?? COLORS.muted;
     doc.roundedRect(PAGE_WIDTH - MARGIN - 160, y + 2, 160, 20, 10).fill(badgeColor);
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(9).text(`Invoice #${data.invoiceNumber}`, PAGE_WIDTH - MARGIN - 150, y + 6, { width: 140, align: 'center' });
+    doc
+      .fillColor('#ffffff')
+      .font('Helvetica-Bold')
+      .fontSize(9)
+      .text(`Invoice #${data.invoiceNumber}`, PAGE_WIDTH - MARGIN - 150, y + 6, {
+        width: 140,
+        align: 'center',
+      });
 
     y += 28;
 
@@ -145,10 +181,18 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     const leftX = MARGIN;
     const rightX = MARGIN + CONTENT_WIDTH / 2 + 20;
 
-    doc.fillColor(COLORS.muted).font('Helvetica-Bold').fontSize(SUBHEADING_SIZE).text('Billed To:', leftX, y);
+    doc
+      .fillColor(COLORS.muted)
+      .font('Helvetica-Bold')
+      .fontSize(SUBHEADING_SIZE)
+      .text('Billed To:', leftX, y);
     y += 20;
 
-    doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(FONT_SIZE + 1).text(data.customerName, leftX, y);
+    doc
+      .fillColor(COLORS.text)
+      .font('Helvetica-Bold')
+      .fontSize(FONT_SIZE + 1)
+      .text(data.customerName, leftX, y);
     y += 16;
     doc.font('Helvetica').fontSize(FONT_SIZE);
     y = wrapText(doc, data.customerAddress, leftX, y, CONTENT_WIDTH / 2 - 10);
@@ -172,7 +216,11 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     y += 25;
 
     // Order Summary heading
-    doc.fillColor(COLORS.text).font('Helvetica-Bold').fontSize(SUBHEADING_SIZE).text('Order Summary', MARGIN, y);
+    doc
+      .fillColor(COLORS.text)
+      .font('Helvetica-Bold')
+      .fontSize(SUBHEADING_SIZE)
+      .text('Order Summary', MARGIN, y);
     y += 25;
 
     // Table header
@@ -184,7 +232,12 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
       { x: 405, width: 90, text: 'Total', align: 'right' },
     ];
 
-    y = drawTableRow(doc, y, colDefs.map((c) => ({ ...c, text: c.text })), true);
+    y = drawTableRow(
+      doc,
+      y,
+      colDefs.map((c) => ({ ...c, text: c.text })),
+      true
+    );
     let rowNum = 1;
 
     for (const item of data.items) {
@@ -210,10 +263,18 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     ];
 
     if (data.previousBalance > 0) {
-      summaryRows.push({ label: 'Previous Balance (unpaid)', value: formatCurrency(data.previousBalance), color: COLORS.warning });
+      summaryRows.push({
+        label: 'Previous Balance (unpaid)',
+        value: formatCurrency(data.previousBalance),
+        color: COLORS.warning,
+      });
     }
     if (data.discountAmount > 0) {
-      summaryRows.push({ label: 'SLA Penalty Discount', value: `-${formatCurrency(data.discountAmount)}`, color: COLORS.danger });
+      summaryRows.push({
+        label: 'SLA Penalty Discount',
+        value: `-${formatCurrency(data.discountAmount)}`,
+        color: COLORS.danger,
+      });
     }
     const halfRate = data.taxRate / 2;
     const taxHalf = data.taxAmount / 2;
@@ -221,7 +282,10 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     summaryRows.push({ label: `CGST (${halfRate}%)`, value: formatCurrency(taxHalf) });
 
     for (const row of summaryRows) {
-      doc.fillColor(row.color ?? COLORS.text).font(row.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(FONT_SIZE);
+      doc
+        .fillColor(row.color ?? COLORS.text)
+        .font(row.bold ? 'Helvetica-Bold' : 'Helvetica')
+        .fontSize(FONT_SIZE);
       doc.text(row.label, summaryX, y, { width: summaryWidth + 100, align: 'left' });
       doc.text(row.value, summaryValX, y, { width: summaryWidth, align: 'right' });
       y += 18;
@@ -230,16 +294,32 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     // Total row
     y += 4;
     doc.rect(MARGIN + 220, y - 4, CONTENT_WIDTH - 220, 28).fill(COLORS.primary);
-    doc.fillColor('#ffffff').font('Helvetica-Bold').fontSize(FONT_SIZE + 2);
+    doc
+      .fillColor('#ffffff')
+      .font('Helvetica-Bold')
+      .fontSize(FONT_SIZE + 2);
     doc.text('Total Amount', summaryX + 8, y + 4);
-    doc.text(formatCurrency(data.totalAmount), summaryValX, y + 4, { width: summaryWidth, align: 'right' });
+    doc.text(formatCurrency(data.totalAmount), summaryValX, y + 4, {
+      width: summaryWidth,
+      align: 'right',
+    });
     y += 40;
 
     // Footer
     doc.rect(MARGIN, PAGE_HEIGHT - MARGIN - 50, CONTENT_WIDTH, 1).fill(COLORS.border);
     doc.fillColor(COLORS.muted).font('Helvetica').fontSize(8);
-    doc.text('This is a computer-generated invoice. No signature required.', MARGIN, PAGE_HEIGHT - MARGIN - 40, { align: 'center' });
-    doc.text(`${data.agencyName} | ${data.agencyPhone} | ${data.agencyEmail}`, MARGIN, PAGE_HEIGHT - MARGIN - 28, { align: 'center' });
+    doc.text(
+      'This is a computer-generated invoice. No signature required.',
+      MARGIN,
+      PAGE_HEIGHT - MARGIN - 40,
+      { align: 'center' }
+    );
+    doc.text(
+      `${data.agencyName} | ${data.agencyPhone} | ${data.agencyEmail}`,
+      MARGIN,
+      PAGE_HEIGHT - MARGIN - 28,
+      { align: 'center' }
+    );
 
     doc.end();
   });

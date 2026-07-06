@@ -35,7 +35,17 @@ export async function createDistributionRequest(data: {
     },
     include: {
       zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
-      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+      deliveryAddress: {
+        select: {
+          id: true,
+          houseNumber: true,
+          street: true,
+          area: true,
+          city: true,
+          state: true,
+          postalCode: true,
+        },
+      },
     },
   });
 }
@@ -45,7 +55,17 @@ export async function findDistributionRequestById(id: string, agencyId: string) 
     where: { id, agencyId },
     include: {
       zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
-      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+      deliveryAddress: {
+        select: {
+          id: true,
+          houseNumber: true,
+          street: true,
+          area: true,
+          city: true,
+          state: true,
+          postalCode: true,
+        },
+      },
     },
   });
 }
@@ -56,7 +76,17 @@ export async function listDistributionRequests(agencyId: string) {
     orderBy: { createdAt: 'desc' },
     include: {
       zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
-      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+      deliveryAddress: {
+        select: {
+          id: true,
+          houseNumber: true,
+          street: true,
+          area: true,
+          city: true,
+          state: true,
+          postalCode: true,
+        },
+      },
     },
   });
 }
@@ -71,7 +101,17 @@ export async function updateDistributionRequest(
     data: data as never,
     include: {
       zones: { include: { deliveryZone: { select: { id: true, name: true } } } },
-      deliveryAddress: { select: { id: true, houseNumber: true, street: true, area: true, city: true, state: true, postalCode: true } },
+      deliveryAddress: {
+        select: {
+          id: true,
+          houseNumber: true,
+          street: true,
+          area: true,
+          city: true,
+          state: true,
+          postalCode: true,
+        },
+      },
     },
   });
 }

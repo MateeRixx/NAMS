@@ -28,7 +28,9 @@ export interface SendEmailParams {
 export async function sendEmail(params: SendEmailParams): Promise<{ id: string } | null> {
   try {
     if (config.EMAIL_FROM === 'onboarding@resend.dev') {
-      console.warn('[EmailService] WARNING: Using Resend test domain (onboarding@resend.dev). Emails will only be delivered to the account owner. Set EMAIL_FROM to a verified custom domain in production.');
+      console.warn(
+        '[EmailService] WARNING: Using Resend test domain (onboarding@resend.dev). Emails will only be delivered to the account owner. Set EMAIL_FROM to a verified custom domain in production.'
+      );
     }
     const to = Array.isArray(params.to) ? params.to.join(',') : params.to;
     const result = await getClient().emails.send({

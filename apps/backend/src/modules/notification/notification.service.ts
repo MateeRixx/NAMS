@@ -67,12 +67,17 @@ export async function sendNotification(dto: {
   });
 
   if (dto.channel === 'EMAIL' && dto.customerId) {
-    const customer = await prisma.customer.findFirst({ where: { id: dto.customerId, agencyId: dto.agencyId } });
+    const customer = await prisma.customer.findFirst({
+      where: { id: dto.customerId, agencyId: dto.agencyId },
+    });
     if (customer?.email) {
-      await sendEmail({ to: customer.email, subject: dto.title, html: dto.message.replace(/\n/g, '<br/>') }).catch(() => {});
+      await sendEmail({
+        to: customer.email,
+        subject: dto.title,
+        html: dto.message.replace(/\n/g, '<br/>'),
+      }).catch(() => {});
     }
   }
 
   return toResponse(notification);
 }
-

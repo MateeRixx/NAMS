@@ -47,10 +47,7 @@ export async function listSubscriptions(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await subService.listSubscriptions(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await subService.listSubscriptions(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -64,11 +61,7 @@ export async function cancelSubscription(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await subService.cancelSubscription(
-      id,
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await subService.cancelSubscription(id, req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -101,11 +94,7 @@ export async function resumeSubscription(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await subService.resumeSubscription(
-      id,
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await subService.resumeSubscription(id, req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -121,7 +110,11 @@ export async function listInvoices(req: Request, res: Response, next: NextFuncti
   }
 }
 
-export async function generateCurrentInvoice(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function generateCurrentInvoice(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const result = await invService.generateCurrentInvoice(req.user!.userId, req.user!.agencyId);
     res.status(201).json({ success: true, data: result });
@@ -147,11 +140,7 @@ export async function downloadInvoicePdf(
 ): Promise<void> {
   try {
     const id = req.params['id']!;
-    const result = await invService.downloadInvoicePdf(
-      id,
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await invService.downloadInvoicePdf(id, req.user!.userId, req.user!.agencyId);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${id}.pdf`);
     res.send(result);
@@ -273,7 +262,11 @@ export async function deleteAddress(
   }
 }
 
-export async function getOnboardingStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function getOnboardingStatus(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const result = await profileService.getOnboardingStatus(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
@@ -308,7 +301,11 @@ export async function updateProfile(
   }
 }
 
-export async function initInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function initInvoicePayment(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const id = req.params['id']!;
     const result = await invService.initInvoicePayment(req.user!.userId, req.user!.agencyId, id);
@@ -318,12 +315,16 @@ export async function initInvoicePayment(req: Request, res: Response, next: Next
   }
 }
 
-export async function verifyInvoicePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function verifyInvoicePayment(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     const id = req.params['id']!;
     const result = await invService.verifyInvoicePayment(req.user!.userId, req.user!.agencyId, {
       invoiceId: id,
-      ...req.body as { orderId: string; paymentId: string; signature: string },
+      ...(req.body as { orderId: string; paymentId: string; signature: string }),
     });
     res.json({ success: true, data: result });
   } catch (error) {
@@ -338,10 +339,7 @@ export async function listNotifications(
 ): Promise<void> {
   try {
     const { listNotifications } = await import('../../services/notification.service.js');
-    const result = await listNotifications(
-      req.user!.agencyId,
-      req.user!.userId
-    );
+    const result = await listNotifications(req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -355,10 +353,7 @@ export async function getUnreadNotificationCount(
 ): Promise<void> {
   try {
     const { getUnreadCount } = await import('../../services/notification.service.js');
-    const result = await getUnreadCount(
-      req.user!.agencyId,
-      req.user!.userId
-    );
+    const result = await getUnreadCount(req.user!.agencyId, req.user!.userId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
@@ -390,7 +385,16 @@ export async function createMyDistributionRequest(
     const result = await reqService.createMyDistributionRequest(
       req.user!.userId,
       req.user!.agencyId,
-      req.body as { title: string; description?: string; requestedQuantity: number; deliveryAddressId?: string; contactPerson?: string; contactPhone?: string; scheduledDate?: string; zones?: { deliveryZoneId: string; quantity: number }[] }
+      req.body as {
+        title: string;
+        description?: string;
+        requestedQuantity: number;
+        deliveryAddressId?: string;
+        contactPerson?: string;
+        contactPhone?: string;
+        scheduledDate?: string;
+        zones?: { deliveryZoneId: string; quantity: number }[];
+      }
     );
     res.status(201).json({ success: true, data: result });
   } catch (error) {
@@ -404,39 +408,24 @@ export async function listMyArticleRequests(
   next: NextFunction
 ): Promise<void> {
   try {
-    const result = await reqService.listMyArticleRequests(
-      req.user!.userId,
-      req.user!.agencyId
-    );
+    const result = await reqService.listMyArticleRequests(req.user!.userId, req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 }
 
-export async function estimateCart(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function estimateCart(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { items } = req.body as { items: { productId: string; startDate?: string }[] };
-    const result = await cartService.estimateCart(
-      req.user!.userId,
-      req.user!.agencyId,
-      items
-    );
+    const result = await cartService.estimateCart(req.user!.userId, req.user!.agencyId, items);
     res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }
 }
 
-export async function checkoutCart(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+export async function checkoutCart(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { items, payment } = req.body as {
       items: { productId: string; startDate?: string }[];
@@ -455,9 +444,14 @@ export async function checkoutCart(
   }
 }
 
-export async function listDeliveryZones(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function listDeliveryZones(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
-    const { listDeliveryZones: getZones } = await import('../delivery-zone/delivery-zone.service.js');
+    const { listDeliveryZones: getZones } =
+      await import('../delivery-zone/delivery-zone.service.js');
     const result = await getZones(req.user!.agencyId);
     res.json({ success: true, data: result });
   } catch (error) {

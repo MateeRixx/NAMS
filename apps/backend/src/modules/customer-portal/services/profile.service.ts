@@ -27,7 +27,10 @@ export async function getProfile(
   };
 }
 
-export async function getOnboardingStatus(customerId: string, agencyId: string): Promise<{ completed: boolean }> {
+export async function getOnboardingStatus(
+  customerId: string,
+  agencyId: string
+): Promise<{ completed: boolean }> {
   const address = await prisma.address.findFirst({
     where: { customerId, agencyId, isPrimary: true },
   });

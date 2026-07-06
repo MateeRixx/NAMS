@@ -30,7 +30,8 @@ const en: Translations = {
   cart_pay: 'Pay Now — ₹{amount}',
   cart_processing: 'Processing...',
   cart_estimate_note_title: 'Why is the first bill lower?',
-  cart_estimate_note_body: 'Your first invoice covers only the remaining days in {month} ({days} days). From next month onwards, you\'ll be billed the full monthly amount.',
+  cart_estimate_note_body:
+    "Your first invoice covers only the remaining days in {month} ({days} days). From next month onwards, you'll be billed the full monthly amount.",
   cart_sub_note: 'Subscriptions will be created and payment processed via Razorpay',
 
   products_title: 'Available Products',
@@ -59,7 +60,8 @@ const en: Translations = {
   subs_resume: 'Resume Delivery',
   subs_pause_history: 'Pause History',
   subs_confirm_cancel_title: 'Cancel Subscription',
-  subs_confirm_cancel_body: 'A final invoice will be generated for days used this month. This cannot be undone.',
+  subs_confirm_cancel_body:
+    'A final invoice will be generated for days used this month. This cannot be undone.',
   subs_keep: 'Keep Subscription',
   subs_yes_cancel: 'Yes, Cancel',
   subs_cancelling: 'Cancelling...',
@@ -92,7 +94,8 @@ const en: Translations = {
   payment_failed: 'Payment failed',
 
   prorated_title: 'Why is the first bill lower?',
-  prorated_body: 'Your first invoice covers only the remaining {days} day(s) of {month}. From next month, you\'ll be charged the full monthly amount (product + delivery + GST).',
+  prorated_body:
+    "Your first invoice covers only the remaining {days} day(s) of {month}. From next month, you'll be charged the full monthly amount (product + delivery + GST).",
 
   lang_en: 'English',
   lang_hi: 'हिन्दी',

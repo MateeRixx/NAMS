@@ -14,32 +14,59 @@ export async function estimateCart(
   agencyId: string,
   items: { productId: string; startDate?: string }[]
 ): Promise<{
-  items: { productId: string; productName: string; billableDays: number; unitPrice: number; amount: number; startDate: string }[];
+  items: {
+    productId: string;
+    productName: string;
+    billableDays: number;
+    unitPrice: number;
+    amount: number;
+    startDate: string;
+  }[];
   subtotal: number;
   deliveryCharges: number;
   billingCharges: number;
   taxAmount: number;
   totalAmount: number;
 }> {
-  const customer = await prisma.customer.findFirst({ where: { id: customerId, agencyId, deletedAt: null } });
+  const customer = await prisma.customer.findFirst({
+    where: { id: customerId, agencyId, deletedAt: null },
+  });
   if (!customer) throw new NotFoundError('Customer');
 
   if (!items.length) throw new ValidationError('Cart is empty');
 
   const productIds = [...new Set(items.map((i) => i.productId))];
-  const products = await prisma.product.findMany({ where: { id: { in: productIds }, agencyId, isActive: true }, include: { dayRates: true } });
-  if (products.length !== productIds.length) throw new NotFoundError('One or more products not found');
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, agencyId, isActive: true },
+    include: { dayRates: true },
+  });
+  if (products.length !== productIds.length)
+    throw new NotFoundError('One or more products not found');
 
   const existingSubs = await prisma.subscription.findMany({
-    where: { customerId, agencyId, productId: { in: productIds }, status: { in: ['ACTIVE', 'PAUSED'] } },
+    where: {
+      customerId,
+      agencyId,
+      productId: { in: productIds },
+      status: { in: ['ACTIVE', 'PAUSED'] },
+    },
   });
   if (existingSubs.length) {
-    throw new ConflictError(`Already subscribed to: ${existingSubs.map((s) => s.productId).join(', ')}`);
+    throw new ConflictError(
+      `Already subscribed to: ${existingSubs.map((s) => s.productId).join(', ')}`
+    );
   }
 
   const now = new Date();
   const productMap = new Map(products.map((p) => [p.id, p]));
-  const cartItems: { productId: string; productName: string; billableDays: number; unitPrice: number; amount: number; startDate: string }[] = [];
+  const cartItems: {
+    productId: string;
+    productName: string;
+    billableDays: number;
+    unitPrice: number;
+    amount: number;
+    startDate: string;
+  }[] = [];
   let subtotal = 0;
 
   for (const item of items) {
@@ -60,8 +87,13 @@ export async function estimateCart(
   }
   subtotal = Math.round(subtotal * 100) / 100;
 
-  const address = await prisma.address.findFirst({ where: { customerId, agencyId, isPrimary: true }, include: { deliveryZone: true } });
-  const deliveryCharges = address?.deliveryZone ? Math.round(Number(address.deliveryZone.monthlyCharge.toString()) * 100) / 100 : 0;
+  const address = await prisma.address.findFirst({
+    where: { customerId, agencyId, isPrimary: true },
+    include: { deliveryZone: true },
+  });
+  const deliveryCharges = address?.deliveryZone
+    ? Math.round(Number(address.deliveryZone.monthlyCharge.toString()) * 100) / 100
+    : 0;
 
   let billingCharges = 0;
   const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
@@ -92,27 +124,46 @@ export async function checkoutCart(
   invoice: { id: string; invoiceNumber: string; totalAmount: number } | null;
   payment: { id: string; amount: number } | null;
 }> {
-  const customer = await prisma.customer.findFirst({ where: { id: customerId, agencyId, deletedAt: null } });
+  const customer = await prisma.customer.findFirst({
+    where: { id: customerId, agencyId, deletedAt: null },
+  });
   if (!customer) throw new NotFoundError('Customer');
 
   if (!items.length) throw new ValidationError('Cart is empty');
 
   const productIds = [...new Set(items.map((i) => i.productId))];
-  const products = await prisma.product.findMany({ where: { id: { in: productIds }, agencyId, isActive: true }, include: { dayRates: true } });
-  if (products.length !== productIds.length) throw new NotFoundError('One or more products not found');
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, agencyId, isActive: true },
+    include: { dayRates: true },
+  });
+  if (products.length !== productIds.length)
+    throw new NotFoundError('One or more products not found');
 
   const existingSubs = await prisma.subscription.findMany({
-    where: { customerId, agencyId, productId: { in: productIds }, status: { in: ['ACTIVE', 'PAUSED'] } },
+    where: {
+      customerId,
+      agencyId,
+      productId: { in: productIds },
+      status: { in: ['ACTIVE', 'PAUSED'] },
+    },
   });
   if (existingSubs.length) {
-    throw new ConflictError(`Already subscribed to: ${existingSubs.map((s) => s.productId).join(', ')}`);
+    throw new ConflictError(
+      `Already subscribed to: ${existingSubs.map((s) => s.productId).join(', ')}`
+    );
   }
 
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const productMap = new Map(products.map((p) => [p.id, p]));
-  const invoiceItems: { productId: string | null; description: string; quantity: number; unitPrice: number; amount: number }[] = [];
+  const invoiceItems: {
+    productId: string | null;
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    amount: number;
+  }[] = [];
   let subtotal = 0;
 
   for (const item of items) {
@@ -134,8 +185,13 @@ export async function checkoutCart(
 
   if (!invoiceItems.length) throw new ValidationError('No billable days in this period');
 
-  const address = await prisma.address.findFirst({ where: { customerId, agencyId, isPrimary: true }, include: { deliveryZone: true } });
-  const deliveryCharges = address?.deliveryZone ? Math.round(Number(address.deliveryZone.monthlyCharge.toString()) * 100) / 100 : 0;
+  const address = await prisma.address.findFirst({
+    where: { customerId, agencyId, isPrimary: true },
+    include: { deliveryZone: true },
+  });
+  const deliveryCharges = address?.deliveryZone
+    ? Math.round(Number(address.deliveryZone.monthlyCharge.toString()) * 100) / 100
+    : 0;
 
   let billingCharges = 0;
   const activeCharges = await billingChargeRepository.listActiveCharges(agencyId);
@@ -179,9 +235,17 @@ export async function checkoutCart(
 
     const invoice = await tx.invoice.create({
       data: {
-        agencyId, customerId, invoiceNumber,
-        billingMonth: month, billingYear: year,
-        subtotal, deliveryCharges, discountAmount: 0, taxAmount, previousBalance: 0, totalAmount,
+        agencyId,
+        customerId,
+        invoiceNumber,
+        billingMonth: month,
+        billingYear: year,
+        subtotal,
+        deliveryCharges,
+        discountAmount: 0,
+        taxAmount,
+        previousBalance: 0,
+        totalAmount,
         status: paymentInfo ? 'PAID' : 'PENDING',
         generatedAt: now,
       },
@@ -204,7 +268,9 @@ export async function checkoutCart(
     if (paymentInfo) {
       payment = await tx.payment.create({
         data: {
-          agencyId, customerId, invoiceId: invoice.id,
+          agencyId,
+          customerId,
+          invoiceId: invoice.id,
           paymentNumber: paymentNumber!,
           amount: totalAmount,
           method: paymentInfo.method as never,
@@ -220,16 +286,27 @@ export async function checkoutCart(
   });
 
   logAudit({
-    agencyId, userId, entityType: 'Subscription',
+    agencyId,
+    userId,
+    entityType: 'Subscription',
     entityId: result.subs.map((s) => s.id).join(','),
     action: 'CART_CHECKOUT',
-    newValue: { subscriptions: result.subs.length, invoiceNumber, totalAmount, paid: !!paymentInfo },
+    newValue: {
+      subscriptions: result.subs.length,
+      invoiceNumber,
+      totalAmount,
+      paid: !!paymentInfo,
+    },
   });
 
   if (customer.email) {
-    const productNames = items.map((i) => productMap.get(i.productId)?.name).filter(Boolean).join(', ');
+    const productNames = items
+      .map((i) => productMap.get(i.productId)?.name)
+      .filter(Boolean)
+      .join(', ');
     createAndQueueNotification({
-      agencyId, customerId,
+      agencyId,
+      customerId,
       type: 'SUBSCRIPTION_CREATED',
       channel: 'EMAIL',
       title: 'Subscriptions Activated',
@@ -247,7 +324,15 @@ export async function checkoutCart(
 
   return {
     subscriptions: result.subs,
-    invoice: result.invoice ? { id: result.invoice.id, invoiceNumber: result.invoice.invoiceNumber, totalAmount: Number(result.invoice.totalAmount.toString()) } : null,
-    payment: result.payment ? { id: result.payment.id, amount: Number(result.payment.amount.toString()) } : null,
+    invoice: result.invoice
+      ? {
+          id: result.invoice.id,
+          invoiceNumber: result.invoice.invoiceNumber,
+          totalAmount: Number(result.invoice.totalAmount.toString()),
+        }
+      : null,
+    payment: result.payment
+      ? { id: result.payment.id, amount: Number(result.payment.amount.toString()) }
+      : null,
   };
 }

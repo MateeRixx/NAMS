@@ -4,7 +4,13 @@ import client from '../api/client';
 interface Complaint {
   id: string;
   customerId: string;
-  customer?: { firstName: string; lastName: string; email?: string; phone?: string; customerCode?: string } | null;
+  customer?: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    customerCode?: string;
+  } | null;
   type: string;
   description: string;
   status: string;
@@ -48,7 +54,9 @@ export default function Complaints() {
     }
   }
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => {
+    load();
+  }, [statusFilter]);
 
   async function handleStatusUpdate(id: string, newStatus: string) {
     setProcessing(id);
@@ -68,7 +76,10 @@ export default function Complaints() {
     if (!noteModal) return;
     setProcessing(noteModal.id);
     try {
-      await client.patch(`/complaints/${noteModal.id}/status`, { status: noteModal.nextStatus, notes: note || undefined });
+      await client.patch(`/complaints/${noteModal.id}/status`, {
+        status: noteModal.nextStatus,
+        notes: note || undefined,
+      });
       setNoteModal(null);
       setNote('');
       await load();
@@ -85,7 +96,12 @@ export default function Complaints() {
     <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div className="page-header">
         <h1>Complaints</h1>
-        <select className="select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: 'auto' }}>
+        <select
+          className="select"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{ width: 'auto' }}
+        >
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
           <option value="IN_PROGRESS">In Progress</option>
@@ -94,10 +110,18 @@ export default function Complaints() {
         </select>
       </div>
 
-      {msg && <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>{msg}</div>}
+      {msg && (
+        <div style={{ color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+          {msg}
+        </div>
+      )}
 
-      {loading ? <div className="loading">Loading...</div> : filtered.length === 0 ? (
-        <div className="empty-state"><p>No complaints found</p></div>
+      {loading ? (
+        <div className="loading">Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <p>No complaints found</p>
+        </div>
       ) : (
         <table className="table">
           <thead>
@@ -118,11 +142,29 @@ export default function Complaints() {
               return (
                 <>
                   <tr key={c.id}>
-                    <td>{c.customer ? `${c.customer.firstName} ${c.customer.lastName}` : c.customerId.slice(0, 8)}</td>
-                    <td><span className="badge">{c.type.replace(/_/g, ' ')}</span></td>
-                    <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description}</td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: statusColor[c.status] || '#6b7280' }}>
+                      {c.customer
+                        ? `${c.customer.firstName} ${c.customer.lastName}`
+                        : c.customerId.slice(0, 8)}
+                    </td>
+                    <td>
+                      <span className="badge">{c.type.replace(/_/g, ' ')}</span>
+                    </td>
+                    <td
+                      style={{
+                        maxWidth: '250px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {c.description}
+                    </td>
+                    <td>
+                      <span
+                        className="badge"
+                        style={{ backgroundColor: statusColor[c.status] || '#6b7280' }}
+                      >
                         {c.status}
                       </span>
                     </td>
@@ -137,13 +179,22 @@ export default function Complaints() {
                             onClick={() => setNoteModal({ id: c.id, nextStatus: ns })}
                             disabled={processing === c.id}
                           >
-                            {ns === 'IN_PROGRESS' ? 'Take' : ns === 'RESOLVED' ? 'Resolve' : ns === 'CLOSED' ? 'Close' : ns}
+                            {ns === 'IN_PROGRESS'
+                              ? 'Take'
+                              : ns === 'RESOLVED'
+                                ? 'Resolve'
+                                : ns === 'CLOSED'
+                                  ? 'Close'
+                                  : ns}
                           </button>
                         ))}
                       </div>
                     </td>
                     <td>
-                      <button className="btn btn-sm" onClick={() => setExpanded(expanded === c.id ? null : c.id)}>
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => setExpanded(expanded === c.id ? null : c.id)}
+                      >
                         {expanded === c.id ? 'Hide' : 'Timeline'}
                       </button>
                     </td>
@@ -153,7 +204,15 @@ export default function Complaints() {
                       <td colSpan={8}>
                         <div className="timeline">
                           {c.history.length === 0 ? (
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem' }}>No history recorded</p>
+                            <p
+                              style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--text-muted)',
+                                padding: '0.5rem',
+                              }}
+                            >
+                              No history recorded
+                            </p>
                           ) : (
                             c.history.map((h, i) => (
                               <div key={i} className="tl-item">
@@ -161,7 +220,10 @@ export default function Complaints() {
                                 <div>
                                   <strong>{h.action}</strong>
                                   {h.notes && <p>{h.notes}</p>}
-                                  <small>{h.performedBy} &middot; {new Date(h.createdAt).toLocaleString()}</small>
+                                  <small>
+                                    {h.performedBy} &middot;{' '}
+                                    {new Date(h.createdAt).toLocaleString()}
+                                  </small>
                                 </div>
                               </div>
                             ))
@@ -182,18 +244,39 @@ export default function Complaints() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Update Status to {noteModal.nextStatus}</h2>
-              <button className="modal-close" onClick={() => setNoteModal(null)}>&times;</button>
+              <button className="modal-close" onClick={() => setNoteModal(null)}>
+                &times;
+              </button>
             </div>
             <div className="input-group">
               <label>Notes (optional)</label>
-              <textarea className="textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add notes..." rows={3} />
+              <textarea
+                className="textarea"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add notes..."
+                rows={3}
+              />
             </div>
             <div className="modal-actions">
-              <button className="btn" onClick={() => setNoteModal(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleUpdateWithNote} disabled={processing === noteModal.id}>
+              <button className="btn" onClick={() => setNoteModal(null)}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleUpdateWithNote}
+                disabled={processing === noteModal.id}
+              >
                 {processing === noteModal.id ? 'Updating...' : `Mark as ${noteModal.nextStatus}`}
               </button>
-              <button className="btn btn-sm" onClick={() => { handleStatusUpdate(noteModal.id, noteModal.nextStatus); setNoteModal(null); }} style={{ marginLeft: '0.25rem' }}>
+              <button
+                className="btn btn-sm"
+                onClick={() => {
+                  handleStatusUpdate(noteModal.id, noteModal.nextStatus);
+                  setNoteModal(null);
+                }}
+                style={{ marginLeft: '0.25rem' }}
+              >
                 Skip Notes
               </button>
             </div>
