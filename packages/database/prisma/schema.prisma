@@ -192,6 +192,7 @@ model Address {
   zoneId      String?
   houseNumber String
   street      String
+  floor       String?
   landmark    String?
   area        String
   city        String

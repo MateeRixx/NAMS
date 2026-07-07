@@ -45,6 +45,7 @@ export interface CreateAddressDto {
   zoneId?: string;
   houseNumber: string;
   street: string;
+  floor?: string;
   landmark?: string;
   area: string;
   city: string;
@@ -57,6 +58,7 @@ export interface UpdateAddressDto {
   zoneId?: string;
   houseNumber?: string;
   street?: string;
+  floor?: string;
   landmark?: string;
   area?: string;
   city?: string;
@@ -72,6 +74,7 @@ export interface AddressResponse {
   zoneId: string | null;
   houseNumber: string;
   street: string;
+  floor: string | null;
   landmark: string | null;
   area: string;
   city: string;

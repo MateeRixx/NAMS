@@ -7,6 +7,7 @@ interface Address {
   id: string;
   houseNumber: string;
   street: string;
+  floor: string | null;
   landmark: string | null;
   area: string;
   city: string;
@@ -19,6 +20,7 @@ interface Address {
 const emptyForm = {
   houseNumber: '',
   street: '',
+  floor: '',
   landmark: '',
   area: '',
   city: '',
@@ -118,6 +120,7 @@ export default function Profile() {
     setForm({
       houseNumber: addr.houseNumber,
       street: addr.street,
+      floor: addr.floor ?? '',
       landmark: addr.landmark ?? '',
       area: addr.area,
       city: addr.city,
@@ -131,7 +134,7 @@ export default function Profile() {
   }
 
   function addrSummary(a: Address) {
-    return [a.houseNumber, a.street, a.landmark, a.area, a.city, a.state, a.postalCode]
+    return [a.houseNumber, a.floor && `Floor ${a.floor}`, a.street, a.landmark, a.area, a.city, a.state, a.postalCode]
       .filter(Boolean)
       .join(', ');
   }
@@ -251,6 +254,17 @@ export default function Profile() {
               />
             </div>
             <div className="input-group">
+              <label>Floor</label>
+              <input
+                className="input"
+                value={form.floor}
+                onChange={(e) => setForm({ ...form, floor: e.target.value })}
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="input-group">
               <label>Street</label>
               <input
                 className="input"
@@ -258,24 +272,32 @@ export default function Profile() {
                 onChange={(e) => setForm({ ...form, street: e.target.value })}
               />
             </div>
-          </div>
-          <div className="input-group">
-            <label>Landmark</label>
-            <input
-              className="input"
-              value={form.landmark}
-              onChange={(e) => setForm({ ...form, landmark: e.target.value })}
-              placeholder="Optional"
-            />
+            <div className="input-group">
+              <label>Landmark</label>
+              <input
+                className="input"
+                value={form.landmark}
+                onChange={(e) => setForm({ ...form, landmark: e.target.value })}
+                placeholder="Optional"
+              />
+            </div>
           </div>
           <div className="form-row">
             <div className="input-group">
               <label>Area</label>
-              <input
-                className="input"
+              <select
+                className="select"
                 value={form.area}
-                onChange={(e) => setForm({ ...form, area: e.target.value })}
-              />
+                onChange={(e) => {
+                  const zone = deliveryZones.find((z) => z.name === e.target.value);
+                  setForm({ ...form, area: e.target.value, zoneId: zone?.id ?? '' });
+                }}
+              >
+                <option value="">-- Select Area --</option>
+                {deliveryZones.map((z) => (
+                  <option key={z.id} value={z.name}>{z.name}</option>
+                ))}
+              </select>
             </div>
             <div className="input-group">
               <label>City</label>
@@ -303,21 +325,6 @@ export default function Profile() {
                 onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
               />
             </div>
-          </div>
-          <div className="input-group">
-            <label>Delivery Zone</label>
-            <select
-              className="select"
-              value={form.zoneId}
-              onChange={(e) => setForm({ ...form, zoneId: e.target.value })}
-            >
-              <option value="">-- Select Zone --</option>
-              {deliveryZones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.name}
-                </option>
-              ))}
-            </select>
           </div>
           <label
             style={{

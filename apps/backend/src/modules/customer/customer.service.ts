@@ -46,6 +46,7 @@ function toAddressResponse(address: {
   zoneId: string | null;
   houseNumber: string;
   street: string;
+  floor: string | null;
   landmark: string | null;
   area: string;
   city: string;
@@ -62,6 +63,7 @@ function toAddressResponse(address: {
     zoneId: address.zoneId,
     houseNumber: address.houseNumber,
     street: address.street,
+    floor: address.floor,
     landmark: address.landmark,
     area: address.area,
     city: address.city,

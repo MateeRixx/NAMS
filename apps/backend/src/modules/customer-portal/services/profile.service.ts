@@ -69,6 +69,7 @@ export async function listAddresses(
     id: a.id,
     houseNumber: a.houseNumber,
     street: a.street,
+    floor: a.floor,
     landmark: a.landmark,
     area: a.area,
     city: a.city,
@@ -85,6 +86,7 @@ export async function createAddress(
   data: {
     houseNumber: string;
     street: string;
+    floor?: string;
     landmark?: string;
     area: string;
     city: string;
@@ -105,6 +107,7 @@ export async function createAddress(
       customerId,
       houseNumber: data.houseNumber,
       street: data.street,
+      floor: data.floor ?? null,
       landmark: data.landmark ?? null,
       area: data.area,
       city: data.city,
@@ -132,6 +135,7 @@ export async function updateAddress(
   data: {
     houseNumber?: string;
     street?: string;
+    floor?: string | null;
     landmark?: string | null;
     area?: string;
     city?: string;
@@ -151,6 +155,7 @@ export async function updateAddress(
     data: {
       ...(data.houseNumber !== undefined && { houseNumber: data.houseNumber }),
       ...(data.street !== undefined && { street: data.street }),
+      ...(data.floor !== undefined && { floor: data.floor }),
       ...(data.landmark !== undefined && { landmark: data.landmark }),
       ...(data.area !== undefined && { area: data.area }),
       ...(data.city !== undefined && { city: data.city }),

@@ -66,7 +66,6 @@ export default function Login() {
               )}
             </button>
           </div>
-          <p className="hint">Use: admin@newsflow.local / admin123</p>
           {error && <p className="error">{error}</p>}
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
             {loading ? 'Logging in...' : 'Sign In'}
