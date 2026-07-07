@@ -276,11 +276,6 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
         color: COLORS.danger,
       });
     }
-    const halfRate = data.taxRate / 2;
-    const taxHalf = data.taxAmount / 2;
-    summaryRows.push({ label: `SGST (${halfRate}%)`, value: formatCurrency(taxHalf) });
-    summaryRows.push({ label: `CGST (${halfRate}%)`, value: formatCurrency(taxHalf) });
-
     for (const row of summaryRows) {
       doc
         .fillColor(row.color ?? COLORS.text)
