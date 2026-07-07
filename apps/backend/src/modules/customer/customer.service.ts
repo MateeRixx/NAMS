@@ -1,4 +1,4 @@
-import { NotFoundError, ConflictError } from '@newsflow/shared';
+import { NotFoundError, ConflictError, ValidationError } from '@newsflow/shared';
 import prisma from '@newsflow/database';
 import * as customerRepository from './customer.repository.js';
 import { logAudit } from '../../services/audit.service.js';
@@ -129,6 +129,21 @@ export async function deleteCustomer(
   const customer = await customerRepository.findCustomerById(id, agencyId);
   if (!customer) {
     throw new NotFoundError('Customer');
+  }
+
+  const [activeSubscriptions, unpaidInvoices] = await Promise.all([
+    prisma.subscription.count({ where: { customerId: id, agencyId, status: 'ACTIVE' } }),
+    prisma.invoice.count({ where: { customerId: id, agencyId, status: { in: ['PENDING', 'OVERDUE'] } } }),
+  ]);
+
+  const blockers: string[] = [];
+  if (activeSubscriptions > 0) blockers.push(`${activeSubscriptions} active subscription(s)`);
+  if (unpaidInvoices > 0) blockers.push(`${unpaidInvoices} unpaid invoice(s)`);
+
+  if (blockers.length > 0) {
+    throw new ValidationError(
+      `Customer cannot be deleted. Resolve first: ${blockers.join(', ')}.`
+    );
   }
 
   await customerRepository.softDeleteCustomer(id, agencyId, deletedBy);

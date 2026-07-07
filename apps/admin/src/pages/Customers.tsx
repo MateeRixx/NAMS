@@ -407,7 +407,15 @@ export default function Customers() {
         <div className="modal-overlay" onClick={() => setDeletingId(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>Delete Customer</h3>
-            <p>This will deactivate the customer and their subscriptions. This cannot be undone.</p>
+            <p style={{ marginBottom: '0.5rem' }}>This will permanently deactivate the customer. This cannot be undone.</p>
+            <div style={{ fontSize: '0.85rem', background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '6px', marginBottom: '0.75rem' }}>
+              <strong>Before deleting, you must:</strong>
+              <ul style={{ margin: '0.25rem 0 0 1.25rem', padding: 0 }}>
+                <li>Cancel all active subscriptions</li>
+                <li>Clear all unpaid/pending invoices</li>
+              </ul>
+            </div>
+            {formError && <p className="error-text" style={{ marginBottom: '0.5rem' }}>{formError}</p>}
             <div className="modal-actions">
               <button className="btn" onClick={() => setDeletingId(null)}>Keep</button>
               <button className="btn btn-danger" onClick={() => handleDelete(deletingId)} disabled={savingEdit}>

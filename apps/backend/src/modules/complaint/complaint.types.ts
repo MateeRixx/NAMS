@@ -24,6 +24,7 @@ export interface ComplaintResponse {
     customerCode: string;
   } | null;
   subscriptionId: string | null;
+  subscription?: { product: { name: string } } | null;
   complaintNumber: string;
   type: string;
   description: string | null;

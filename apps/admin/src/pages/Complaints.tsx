@@ -4,12 +4,17 @@ import client from '../api/client';
 interface Complaint {
   id: string;
   customerId: string;
+  complaintNumber: string;
   customer?: {
     firstName: string;
     lastName: string;
     email?: string;
     phone?: string;
     customerCode?: string;
+  } | null;
+  subscription?: {
+    id: string;
+    product: { name: string };
   } | null;
   type: string;
   description: string;
@@ -126,11 +131,13 @@ export default function Complaints() {
         <table className="table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Customer</th>
+              <th>Phone</th>
+              <th>Product</th>
               <th>Type</th>
               <th>Description</th>
               <th>Status</th>
-              <th>Resolved</th>
               <th>Created</th>
               <th>Actions</th>
               <th />
@@ -142,17 +149,36 @@ export default function Complaints() {
               return (
                 <>
                   <tr key={c.id}>
+                    <td style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                      {c.complaintNumber || c.id.slice(0, 8)}
+                    </td>
                     <td>
                       {c.customer
                         ? `${c.customer.firstName} ${c.customer.lastName}`
                         : c.customerId.slice(0, 8)}
+                      {c.customer?.customerCode && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {c.customer.customerCode}
+                        </div>
+                      )}
+                      {c.customer?.email && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          {c.customer.email}
+                        </div>
+                      )}
+                    </td>
+                    <td>
+                      {c.customer?.phone || '-'}
+                    </td>
+                    <td>
+                      {c.subscription?.product?.name || '-'}
                     </td>
                     <td>
                       <span className="badge">{c.type.replace(/_/g, ' ')}</span>
                     </td>
                     <td
                       style={{
-                        maxWidth: '250px',
+                        maxWidth: '200px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -168,7 +194,6 @@ export default function Complaints() {
                         {c.status}
                       </span>
                     </td>
-                    <td>{c.resolvedAt ? new Date(c.resolvedAt).toLocaleDateString() : '-'}</td>
                     <td>{new Date(c.createdAt).toLocaleDateString()}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.25rem' }}>
@@ -201,7 +226,7 @@ export default function Complaints() {
                   </tr>
                   {expanded === c.id && (
                     <tr key={`${c.id}-tl`}>
-                      <td colSpan={8}>
+                      <td colSpan={10}>
                         <div className="timeline">
                           {c.history.length === 0 ? (
                             <p

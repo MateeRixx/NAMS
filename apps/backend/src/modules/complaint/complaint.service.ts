@@ -28,6 +28,7 @@ function toComplaintResponse(c: {
     phone: string | null;
     customerCode: string;
   } | null;
+  subscription?: { product: { name: string } } | null;
   subscriptionId: string | null;
   complaintNumber: string;
   type: string;
@@ -52,6 +53,7 @@ function toComplaintResponse(c: {
           customerCode: c.customer.customerCode,
         }
       : null,
+    subscription: c.subscription,
     subscriptionId: c.subscriptionId,
     complaintNumber: c.complaintNumber,
     type: c.type,
