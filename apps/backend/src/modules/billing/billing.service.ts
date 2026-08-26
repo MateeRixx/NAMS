@@ -170,12 +170,12 @@ async function calculateProductAmount(
   periodStart: Date,
   periodEnd: Date
 ): Promise<{ billableCount: number; totalAmount: number; description: string }> {
-  const product = sub.product;
+  const { product, billingCycle: subBillingCycle, startDate, endDate, pauses } = sub;
   const frequency = product.frequency ?? 'DAILY';
   const basePrice = Number(product.basePrice.toString());
   const subscriptionMonthlyPrice = product.subscriptionMonthlyPrice ? Number(product.subscriptionMonthlyPrice.toString()) : null;
   const subscriptionYearlyPrice = product.subscriptionYearlyPrice ? Number(product.subscriptionYearlyPrice.toString()) : null;
-  const billingCycle = sub.billingCycle ?? 'MONTHLY';
+  const billingCycle = subBillingCycle ?? 'MONTHLY';
 
   const rates = await billingRepository.findProductDayRates(product.id);
   const dayRateMap = new Map<string, Map<number, number>>();
@@ -187,15 +187,15 @@ async function calculateProductAmount(
     dayRateMap.get(freq)!.set(rate.dayOfWeek ?? 0, Number(rate.price.toString()));
   }
 
-  const pausePeriods: { start: Date; end: Date }[] = sub.pauses.map((p) => ({
+  const pausePeriods: { start: Date; end: Date }[] = pauses.map((p) => ({
     start: p.startDate,
     end: p.endDate,
   }));
 
-  const startNorm = new Date(sub.startDate);
+  const startNorm = new Date(startDate);
   startNorm.setHours(0, 0, 0, 0);
   const subStart = startNorm > periodStart ? startNorm : periodStart;
-  const endNorm = sub.endDate ? new Date(sub.endDate) : null;
+  const endNorm = endDate ? new Date(endDate) : null;
   if (endNorm) endNorm.setHours(23, 59, 59, 999);
   const subEnd = endNorm && endNorm < periodEnd ? endNorm : periodEnd;
 
@@ -206,7 +206,8 @@ async function calculateProductAmount(
         totalAmount: subscriptionYearlyPrice,
         description: `${product.name} (Yearly Subscription)`,
       };
-    } else if (subscriptionMonthlyPrice) {
+    }
+    if (subscriptionMonthlyPrice) {
       const monthsInPeriod = (dto.billingYear - periodStart.getFullYear()) * 12 + (dto.billingMonth - (periodStart.getMonth() + 1)) + 1;
       return {
         billableCount: monthsInPeriod,
