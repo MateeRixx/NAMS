@@ -7,6 +7,7 @@ interface Zone {
   name: string;
   description: string | null;
   monthlyCharge: number;
+  perDeliveryCharge: number;
   createdAt: string;
 }
 
@@ -15,7 +16,7 @@ export default function DeliveryZones() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', monthlyCharge: '' });
+  const [form, setForm] = useState({ name: '', description: '', monthlyCharge: '', perDeliveryCharge: '' });
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -33,14 +34,14 @@ export default function DeliveryZones() {
   useEffect(() => { load(); }, []);
 
   function resetForm() {
-    setForm({ name: '', description: '', monthlyCharge: '' });
+    setForm({ name: '', description: '', monthlyCharge: '', perDeliveryCharge: '' });
     setEditId(null);
     setShowForm(false);
     setMsg('');
   }
 
   function startEdit(zone: Zone) {
-    setForm({ name: zone.name, description: zone.description ?? '', monthlyCharge: String(zone.monthlyCharge) });
+    setForm({ name: zone.name, description: zone.description ?? '', monthlyCharge: String(zone.monthlyCharge), perDeliveryCharge: String(zone.perDeliveryCharge) });
     setEditId(zone.id);
     setShowForm(true);
   }
@@ -50,7 +51,7 @@ export default function DeliveryZones() {
     setSubmitting(true);
     setMsg('');
     try {
-      const payload = { name: form.name.trim(), description: form.description.trim() || undefined, monthlyCharge: Number(form.monthlyCharge) || 0 };
+      const payload = { name: form.name.trim(), description: form.description.trim() || undefined, monthlyCharge: Number(form.monthlyCharge) || 0, perDeliveryCharge: Number(form.perDeliveryCharge) || 0 };
       if (editId) {
         await client.patch(`/delivery-zones/${editId}`, payload);
       } else {
@@ -103,6 +104,12 @@ export default function DeliveryZones() {
               <input className="input" type="number" step="0.01" min="0" value={form.monthlyCharge} onChange={(e) => setForm({ ...form, monthlyCharge: e.target.value })} placeholder="0.00" />
             </div>
           </div>
+          <div className="form-row">
+            <div className="input-group">
+              <label>Per Delivery Charge (₹)</label>
+              <input className="input" type="number" step="0.01" min="0" value={form.perDeliveryCharge} onChange={(e) => setForm({ ...form, perDeliveryCharge: e.target.value })} placeholder="0.00" />
+            </div>
+          </div>
           <div className="input-group">
             <label>Description</label>
             <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional description" />
@@ -125,6 +132,7 @@ export default function DeliveryZones() {
               <th>Name</th>
               <th>Description</th>
               <th>Monthly Charge</th>
+              <th>Per Delivery</th>
               <th>Created</th>
               <th />
             </tr>
@@ -135,6 +143,7 @@ export default function DeliveryZones() {
                 <td><strong>{z.name}</strong></td>
                 <td>{z.description ?? '-'}</td>
                 <td>₹{Number(z.monthlyCharge).toFixed(2)}</td>
+                <td>₹{Number(z.perDeliveryCharge).toFixed(2)}</td>
                 <td>{new Date(z.createdAt).toLocaleDateString()}</td>
                 <td>
                   <div style={{ display: 'flex', gap: '0.25rem' }}>

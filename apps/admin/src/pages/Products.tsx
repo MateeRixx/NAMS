@@ -5,7 +5,10 @@ interface Product {
   id: string;
   name: string;
   type: string;
+  frequency: string;
   basePrice: number;
+  subscriptionMonthlyPrice: number | null;
+  subscriptionYearlyPrice: number | null;
   description: string | null;
   isActive: boolean;
   createdAt: string;
@@ -19,6 +22,7 @@ interface DayRate {
 
 const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const productTypes = ['NEWSPAPER', 'MAGAZINE', 'BUNDLE'];
+const frequencies = ['DAILY', 'WEEKLY', 'BIWEEKLY', 'MONTHLY', 'QUARTERLY'];
 
 const emptyDayRates: Record<number, string> = { 0: '', 1: '', 2: '', 3: '', 4: '', 5: '', 6: '' };
 
@@ -27,7 +31,7 @@ export default function Products() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' });
+  const [form, setForm] = useState({ name: '', type: 'NEWSPAPER', frequency: 'DAILY', basePrice: '', subscriptionMonthlyPrice: '', subscriptionYearlyPrice: '', description: '' });
   const [dayRateInputs, setDayRateInputs] = useState<Record<number, string>>({ ...emptyDayRates });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
@@ -59,7 +63,10 @@ export default function Products() {
       const payload: Record<string, unknown> = {
         name: form.name,
         type: form.type,
+        frequency: form.frequency,
         basePrice: parseFloat(form.basePrice),
+        subscriptionMonthlyPrice: form.subscriptionMonthlyPrice ? parseFloat(form.subscriptionMonthlyPrice) : undefined,
+        subscriptionYearlyPrice: form.subscriptionYearlyPrice ? parseFloat(form.subscriptionYearlyPrice) : undefined,
         description: form.description || undefined,
       };
       if (dayRatesPayload.length) payload.dayRates = dayRatesPayload;
@@ -70,7 +77,7 @@ export default function Products() {
       }
       setShowForm(false);
       setEditId(null);
-      setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' });
+      setForm({ name: '', type: 'NEWSPAPER', frequency: 'DAILY', basePrice: '', subscriptionMonthlyPrice: '', subscriptionYearlyPrice: '', description: '' });
       setDayRateInputs({ ...emptyDayRates });
       await load();
     } catch (err: unknown) {
@@ -82,7 +89,7 @@ export default function Products() {
 
   async function startEdit(p: Product) {
     setEditId(p.id);
-    setForm({ name: p.name, type: p.type, basePrice: String(p.basePrice), description: p.description ?? '' });
+    setForm({ name: p.name, type: p.type, frequency: p.frequency || 'DAILY', basePrice: String(p.basePrice), subscriptionMonthlyPrice: p.subscriptionMonthlyPrice ? String(p.subscriptionMonthlyPrice) : '', subscriptionYearlyPrice: p.subscriptionYearlyPrice ? String(p.subscriptionYearlyPrice) : '', description: p.description ?? '' });
     try {
       const res = await client.get(`/products/${p.id}/rates`);
       const rates: DayRate[] = res.data.data;
@@ -141,7 +148,7 @@ export default function Products() {
     <div style={{ animation: 'pageIn 0.25s ease-out' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h1 style={{ margin: 0 }}>Products</h1>
-        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', type: 'NEWSPAPER', basePrice: '', description: '' }); setDayRateInputs({ ...emptyDayRates }); }}>
+        <button className="btn btn-primary" onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: '', type: 'NEWSPAPER', frequency: 'DAILY', basePrice: '', subscriptionMonthlyPrice: '', subscriptionYearlyPrice: '', description: '' }); setDayRateInputs({ ...emptyDayRates }); }}>
           {showForm ? 'Cancel' : '+ Add Product'}
         </button>
       </div>
@@ -163,12 +170,32 @@ export default function Products() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
             <div className="input-group">
+              <label>Frequency</label>
+              <select className="select" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })}>
+                {frequencies.map((f) => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div className="input-group">
               <label>Base Price (₹) *</label>
               <input className="input" type="number" step="0.01" min="0" value={form.basePrice}
                 onChange={(e) => {
                   setForm({ ...form, basePrice: e.target.value });
                 }} />
             </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <div className="input-group">
+              <label>Subscription Monthly Price (₹)</label>
+              <input className="input" type="number" step="0.01" min="0" value={form.subscriptionMonthlyPrice}
+                onChange={(e) => setForm({ ...form, subscriptionMonthlyPrice: e.target.value })} placeholder="Optional (for bundles)" />
+            </div>
+            <div className="input-group">
+              <label>Subscription Yearly Price (₹)</label>
+              <input className="input" type="number" step="0.01" min="0" value={form.subscriptionYearlyPrice}
+                onChange={(e) => setForm({ ...form, subscriptionYearlyPrice: e.target.value })} placeholder="Optional (for bundles)" />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginTop: '0.5rem' }}>
             <div className="input-group">
               <label>Description</label>
               <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Optional" />
@@ -209,7 +236,9 @@ export default function Products() {
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.name}</div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                    {p.type} &middot; ₹{p.basePrice.toFixed(2)}/day
+                    {p.type} &middot; {p.frequency} &middot; ₹{p.basePrice.toFixed(2)}/day
+                    {p.subscriptionMonthlyPrice && <> &middot; ₹{p.subscriptionMonthlyPrice.toFixed(2)}/month</>}
+                    {p.subscriptionYearlyPrice && <> &middot; ₹{p.subscriptionYearlyPrice.toFixed(2)}/year</>}
                     {p.description && <> &middot; {p.description}</>}
                   </div>
                 </div>

@@ -10,6 +10,7 @@ interface Subscription {
   startDate: string;
   endDate: string | null;
   status: string;
+  billingCycle: string;
   createdAt: string;
   customer?: Customer;
   product?: Product;
@@ -22,7 +23,7 @@ export default function Subscriptions() {
   const [products, setProducts] = useState<Product[]>([]);
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ customerId: '', productId: '', startDate: '' });
+  const [form, setForm] = useState({ customerId: '', productId: '', startDate: '', billingCycle: 'MONTHLY' });
   const [submitting, setSubmitting] = useState(false);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [pauseId, setPauseId] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function Subscriptions() {
     try {
       await client.post('/subscriptions', form);
       setShowForm(false);
-      setForm({ customerId: '', productId: '', startDate: '' });
+      setForm({ customerId: '', productId: '', startDate: '', billingCycle: 'MONTHLY' });
       await load();
       setMsg('Subscription created'); setMsgType('success');
     } catch { setMsg('Failed to create subscription'); setMsgType('error'); }
@@ -149,9 +150,18 @@ export default function Subscriptions() {
               </select>
             </div>
           </div>
-          <div className="input-group">
-            <label>Start Date</label>
-            <input className="input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+          <div className="form-row">
+            <div className="input-group">
+              <label>Start Date</label>
+              <input className="input" type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} />
+            </div>
+            <div className="input-group">
+              <label>Billing Cycle</label>
+              <select className="select" value={form.billingCycle} onChange={(e) => setForm({ ...form, billingCycle: e.target.value })}>
+                <option value="MONTHLY">Monthly</option>
+                <option value="YEARLY">Yearly</option>
+              </select>
+            </div>
           </div>
           <button className="btn btn-primary" onClick={handleCreate} disabled={submitting || !form.customerId || !form.productId || !form.startDate}>
             {submitting ? 'Creating...' : 'Create Subscription'}
@@ -169,6 +179,7 @@ export default function Subscriptions() {
               <th>Product</th>
               <th>Start Date</th>
               <th>End Date</th>
+              <th>Billing Cycle</th>
               <th>Status</th>
               <th>Created</th>
               <th />
@@ -181,6 +192,7 @@ export default function Subscriptions() {
                 <td>{s.product?.name ?? <span className="mono">{s.productId.slice(0, 8)}...</span>}</td>
                 <td>{new Date(s.startDate).toLocaleDateString()}</td>
                 <td>{s.endDate ? new Date(s.endDate).toLocaleDateString() : '-'}</td>
+                <td>{s.billingCycle || 'MONTHLY'}</td>
                 <td><span className={`badge badge-${s.status.toLowerCase()}`}>{s.status}</span></td>
                 <td>{new Date(s.createdAt).toLocaleDateString()}</td>
                 <td>
