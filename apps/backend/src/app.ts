@@ -39,7 +39,10 @@ const allowedOrigins = [
   'capacitor://localhost',
   'http://localhost',
   'https://localhost',
-];
+  'https://admin.modernakhbaar.indevs.in',
+  'https://nams-customer-ooart03t6-mohit-kumars-projects-2e5a80e9.vercel.app',
+  'https://api.modernakhbaar.indevs.in',
+].filter(Boolean);
 
 const cspExtra = config.CSP_CONNECT_SRC
   ? config.CSP_CONNECT_SRC.split(',')
@@ -64,6 +67,7 @@ app.use(
       if (!origin) return cb(null, true);
       if (allowedOrigins.includes(origin)) return cb(null, true);
       if (origin.endsWith('.vercel.app')) return cb(null, true);
+      if (origin.endsWith('.indevs.in')) return cb(null, true);
       if (config.NODE_ENV === 'development') console.warn(`CORS blocked origin: ${origin}`);
       cb(null, false);
     },
