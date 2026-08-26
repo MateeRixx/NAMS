@@ -158,6 +158,7 @@ describe('Billing Service', () => {
       vi.mocked(billingRepository.findProductDayRates).mockResolvedValue([]);
       vi.mocked(billingRepository.findPrimaryAddressZone).mockResolvedValue({
         monthlyCharge: { toString: () => '50' },
+        perDeliveryCharge: { toString: () => '0' },
       } as never);
       vi.mocked(billingRepository.findResolvedComplaintsInPeriod).mockResolvedValue([]);
       vi.mocked(billingRepository.findUnresolvedComplaintsInPeriod).mockResolvedValue([]);
