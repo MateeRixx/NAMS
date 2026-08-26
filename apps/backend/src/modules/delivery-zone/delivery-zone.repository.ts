@@ -6,7 +6,8 @@ export async function createDeliveryZone(data: CreateDeliveryZoneDto & { agencyI
     data: {
       name: data.name,
       description: data.description,
-      monthlyCharge: data.monthlyCharge,
+      monthlyCharge: data.monthlyCharge ?? 0,
+      perDeliveryCharge: data.perDeliveryCharge ?? 0,
       agencyId: data.agencyId,
     },
   });
@@ -29,6 +30,7 @@ export async function updateDeliveryZone(
       ...(data.name !== undefined && { name: data.name }),
       ...(data.description !== undefined && { description: data.description }),
       ...(data.monthlyCharge !== undefined && { monthlyCharge: data.monthlyCharge }),
+      ...(data.perDeliveryCharge !== undefined && { perDeliveryCharge: data.perDeliveryCharge }),
     },
   });
 }

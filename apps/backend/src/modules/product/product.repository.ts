@@ -6,12 +6,14 @@ import type {
   UpdateDayRateDto,
 } from './product.types.js';
 
+type ProductFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY';
+
 export async function createProduct(data: CreateProductDto & { agencyId: string }) {
   const { dayRates, ...productData } = data;
   const prismaData: Record<string, unknown> = { ...productData };
   if (dayRates?.length) {
     prismaData['dayRates'] = {
-      create: dayRates.map((r) => ({ ...r, agencyId: data.agencyId })),
+      create: dayRates.map((r) => ({ ...r, agencyId: data.agencyId, frequency: (r.frequency ?? 'DAILY') as ProductFrequency })),
     };
   }
   return prisma.product.create({ data: prismaData as never });
@@ -47,18 +49,19 @@ export async function listProducts(agencyId: string) {
 export async function createDayRate(
   data: CreateDayRateDto & { agencyId: string; productId: string }
 ) {
-  return prisma.productDayRate.create({ data: data as never });
+  return prisma.productDayRate.create({ data: { ...data, frequency: (data.frequency ?? 'DAILY') as ProductFrequency } as never });
 }
 
 export async function upsertDayRate(
   productId: string,
   agencyId: string,
-  dayOfWeek: number,
+  dayOfWeek: number | null,
+  frequency: string | null,
   price: number
 ) {
   return prisma.productDayRate.upsert({
-    where: { productId_dayOfWeek: { productId, dayOfWeek } },
-    create: { productId, agencyId, dayOfWeek, price },
+    where: { productId_dayOfWeek_frequency: { productId, dayOfWeek: dayOfWeek ?? 0, frequency: (frequency ?? 'DAILY') as ProductFrequency } },
+    create: { productId, agencyId, dayOfWeek: dayOfWeek ?? 0, frequency: (frequency ?? 'DAILY') as ProductFrequency, price },
     update: { price },
   });
 }
@@ -72,7 +75,7 @@ export async function findDayRateById(id: string, agencyId: string) {
 export async function listDayRates(productId: string, agencyId: string) {
   return prisma.productDayRate.findMany({
     where: { productId, agencyId },
-    orderBy: { dayOfWeek: 'asc' },
+    orderBy: [{ frequency: 'asc' }, { dayOfWeek: 'asc' }],
   });
 }
 

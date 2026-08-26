@@ -12,6 +12,7 @@ function toResponse(zone: {
   name: string;
   description: string | null;
   monthlyCharge: { toString: () => string };
+  perDeliveryCharge: { toString: () => string };
   createdAt: Date;
   updatedAt: Date;
 }): DeliveryZoneResponse {
@@ -21,6 +22,7 @@ function toResponse(zone: {
     name: zone.name,
     description: zone.description,
     monthlyCharge: Number(zone.monthlyCharge.toString()),
+    perDeliveryCharge: Number(zone.perDeliveryCharge.toString()),
     createdAt: zone.createdAt,
     updatedAt: zone.updatedAt,
   };

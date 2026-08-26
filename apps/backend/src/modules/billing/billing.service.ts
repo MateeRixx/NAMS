@@ -80,6 +80,160 @@ function getDateRange(year: number, month: number): { start: Date; end: Date } {
   return { start, end };
 }
 
+function getDeliveryCountForFrequency(frequency: string, year: number, month: number): number {
+  const totalDays = daysInMonth(year, month);
+  switch (frequency) {
+    case 'DAILY':
+      return totalDays;
+    case 'WEEKLY':
+      return Math.ceil(totalDays / 7);
+    case 'BIWEEKLY':
+      return Math.ceil(totalDays / 14);
+    case 'MONTHLY':
+      return 1;
+    case 'QUARTERLY':
+      return month % 3 === 1 ? 1 : 0;
+    default:
+      return totalDays;
+  }
+}
+
+function getBillableDatesForFrequency(
+  frequency: string,
+  year: number,
+  month: number,
+  subStart: Date,
+  subEnd: Date,
+  pausePeriods: { start: Date; end: Date }[]
+): Date[] {
+  const totalDays = daysInMonth(year, month);
+  const billableDates: Date[] = [];
+
+  for (let day = 1; day <= totalDays; day += 1) {
+    const currentDate = new Date(year, month - 1, day);
+    if (currentDate < subStart || currentDate > subEnd) continue;
+
+    const isPaused = pausePeriods.some(
+      (pause) => currentDate >= pause.start && currentDate <= pause.end
+    );
+    if (isPaused) continue;
+
+    let shouldBill = false;
+    const dayOfWeek = currentDate.getDay();
+
+    switch (frequency) {
+      case 'DAILY':
+        shouldBill = true;
+        break;
+      case 'WEEKLY':
+        shouldBill = dayOfWeek === 0;
+        break;
+      case 'BIWEEKLY':
+        shouldBill = dayOfWeek === 0 && Math.floor((day - 1) / 7) % 2 === 0;
+        break;
+      case 'MONTHLY':
+        shouldBill = day === 1;
+        break;
+      case 'QUARTERLY':
+        shouldBill = day === 1 && (month - 1) % 3 === 0;
+        break;
+      default:
+        shouldBill = true;
+    }
+
+    if (shouldBill) {
+      billableDates.push(currentDate);
+    }
+  }
+
+  return billableDates;
+}
+
+async function calculateProductAmount(
+  sub: {
+    productId: string;
+    product: {
+      id: string;
+      name: string;
+      type: string;
+      frequency: string;
+      basePrice: { toString: () => string };
+      subscriptionMonthlyPrice: { toString: () => string } | null;
+      subscriptionYearlyPrice: { toString: () => string } | null;
+    };
+    billingCycle: string;
+    startDate: Date;
+    endDate: Date | null;
+    pauses: { startDate: Date; endDate: Date }[];
+  },
+  dto: GenerateInvoiceDto,
+  periodStart: Date,
+  periodEnd: Date
+): Promise<{ billableCount: number; totalAmount: number; description: string }> {
+  const product = sub.product;
+  const frequency = product.frequency ?? 'DAILY';
+  const basePrice = Number(product.basePrice.toString());
+  const subscriptionMonthlyPrice = product.subscriptionMonthlyPrice ? Number(product.subscriptionMonthlyPrice.toString()) : null;
+  const subscriptionYearlyPrice = product.subscriptionYearlyPrice ? Number(product.subscriptionYearlyPrice.toString()) : null;
+  const billingCycle = sub.billingCycle ?? 'MONTHLY';
+
+  const rates = await billingRepository.findProductDayRates(product.id);
+  const dayRateMap = new Map<string, Map<number, number>>();
+  for (const rate of rates) {
+    const freq = rate.frequency ?? 'DAILY';
+    if (!dayRateMap.has(freq)) {
+      dayRateMap.set(freq, new Map());
+    }
+    dayRateMap.get(freq)!.set(rate.dayOfWeek ?? 0, Number(rate.price.toString()));
+  }
+
+  const pausePeriods: { start: Date; end: Date }[] = sub.pauses.map((p) => ({
+    start: p.startDate,
+    end: p.endDate,
+  }));
+
+  const startNorm = new Date(sub.startDate);
+  startNorm.setHours(0, 0, 0, 0);
+  const subStart = startNorm > periodStart ? startNorm : periodStart;
+  const endNorm = sub.endDate ? new Date(sub.endDate) : null;
+  if (endNorm) endNorm.setHours(23, 59, 59, 999);
+  const subEnd = endNorm && endNorm < periodEnd ? endNorm : periodEnd;
+
+  if (product.type === 'BUNDLE' && (subscriptionMonthlyPrice || subscriptionYearlyPrice)) {
+    if (billingCycle === 'YEARLY' && subscriptionYearlyPrice) {
+      return {
+        billableCount: 1,
+        totalAmount: subscriptionYearlyPrice,
+        description: `${product.name} (Yearly Subscription)`,
+      };
+    } else if (subscriptionMonthlyPrice) {
+      const monthsInPeriod = (dto.billingYear - periodStart.getFullYear()) * 12 + (dto.billingMonth - (periodStart.getMonth() + 1)) + 1;
+      return {
+        billableCount: monthsInPeriod,
+        totalAmount: subscriptionMonthlyPrice * monthsInPeriod,
+        description: `${product.name} (Monthly Subscription x${monthsInPeriod})`,
+      };
+    }
+  }
+
+  const billableDates = getBillableDatesForFrequency(frequency, dto.billingYear, dto.billingMonth, subStart, subEnd, pausePeriods);
+  const billableCount = billableDates.length;
+
+  let totalProductAmount = 0;
+  for (const currentDate of billableDates) {
+    const dayOfWeek = currentDate.getDay();
+    const freqRateMap = dayRateMap.get(frequency);
+    const dayRate = freqRateMap?.get(dayOfWeek);
+    totalProductAmount += dayRate ?? basePrice;
+  }
+
+  return {
+    billableCount,
+    totalAmount: totalProductAmount,
+    description: `${product.name} (${billableCount} deliveries)`,
+  };
+}
+
 export async function generateInvoice(
   dto: GenerateInvoiceDto,
   agencyId: string,
@@ -113,7 +267,6 @@ export async function generateInvoice(
     throw new NotFoundError('No active subscriptions found for this period');
   }
 
-  const productDayRateMap = new Map<string, Map<number, number>>();
   const invoiceItems: {
     productId: string | null;
     description: string;
@@ -123,62 +276,15 @@ export async function generateInvoice(
   }[] = [];
 
   for (const sub of subscriptions) {
-    const { productId } = sub;
-    if (!productDayRateMap.has(productId)) {
-      const rates = await billingRepository.findProductDayRates(productId);
-      const rateMap = new Map<number, number>();
-      for (const rate of rates) {
-        rateMap.set(rate.dayOfWeek, Number(rate.price.toString()));
-      }
-      productDayRateMap.set(productId, rateMap);
-    }
-    const dayRates = productDayRateMap.get(productId)!;
-    const basePrice = Number(sub.product.basePrice.toString());
-
-    const pausePeriods: { start: Date; end: Date }[] = sub.pauses.map((p) => ({
-      start: p.startDate,
-      end: p.endDate,
-    }));
-
-    const startNorm = new Date(sub.startDate);
-    startNorm.setHours(0, 0, 0, 0);
-    const subStart = startNorm > periodStart ? startNorm : periodStart;
-    const endNorm = sub.endDate ? new Date(sub.endDate) : null;
-    if (endNorm) endNorm.setHours(23, 59, 59, 999);
-    const subEnd = endNorm && endNorm < periodEnd ? endNorm : periodEnd;
-
-    let billableCount = 0;
-    let totalProductAmount = 0;
-
-    const totalDays = daysInMonth(dto.billingYear, dto.billingMonth);
-    for (let day = 1; day <= totalDays; day += 1) {
-      const currentDate = new Date(dto.billingYear, dto.billingMonth - 1, day);
-      if (currentDate < subStart || currentDate > subEnd) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-
-      const isPaused = pausePeriods.some(
-        (pause) => currentDate >= pause.start && currentDate <= pause.end
-      );
-      if (isPaused) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-
-      billableCount += 1;
-      const dayOfWeek = currentDate.getDay();
-      const dayRate = dayRates.get(dayOfWeek);
-      totalProductAmount += dayRate ?? basePrice;
-    }
+    const { billableCount, totalAmount, description } = await calculateProductAmount(sub, dto, periodStart, periodEnd);
 
     if (billableCount > 0) {
       invoiceItems.push({
         productId: sub.productId,
-        description: `${sub.product.name} (${billableCount} days)`,
+        description,
         quantity: billableCount,
-        unitPrice: Math.round((totalProductAmount / billableCount) * 100) / 100,
-        amount: Math.round(totalProductAmount * 100) / 100,
+        unitPrice: Math.round((totalAmount / billableCount) * 100) / 100,
+        amount: Math.round(totalAmount * 100) / 100,
       });
     }
   }
@@ -206,9 +312,23 @@ export async function generateInvoice(
   const subtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
 
   const deliveryZone = await billingRepository.findPrimaryAddressZone(dto.customerId, agencyId);
-  const deliveryCharges = deliveryZone
-    ? Math.round(Number(deliveryZone.monthlyCharge.toString()) * 100) / 100
-    : 0;
+  let deliveryCharges = 0;
+  if (deliveryZone) {
+    const monthlyCharge = Number(deliveryZone.monthlyCharge.toString());
+    const perDeliveryCharge = Number(deliveryZone.perDeliveryCharge.toString());
+
+    let totalDeliveries = 0;
+    for (const sub of subscriptions) {
+      const frequency = sub.product.frequency ?? 'DAILY';
+      totalDeliveries += getDeliveryCountForFrequency(frequency, dto.billingYear, dto.billingMonth);
+    }
+
+    if (perDeliveryCharge > 0) {
+      deliveryCharges = Math.round(totalDeliveries * perDeliveryCharge * 100) / 100;
+    } else if (monthlyCharge > 0) {
+      deliveryCharges = Math.round(monthlyCharge * 100) / 100;
+    }
+  }
 
   const resolvedComplaints = await billingRepository.findResolvedComplaintsInPeriod(
     dto.customerId,
@@ -217,14 +337,14 @@ export async function generateInvoice(
     periodEnd
   );
 
-  let totalComplaintCredit = 0;
   for (const complaint of resolvedComplaints) {
-    const sub = complaint.subscription;
-    if (!sub) continue;
+    const complaintSub = complaint.subscription;
+    if (!complaintSub) continue;
     const dateForRate = complaint.complaintDate ?? complaint.createdAt;
     const dayOfWeek = dateForRate.getDay();
-    const dayRate = await billingRepository.findDayRateForProduct(sub.productId, dayOfWeek);
-    const creditAmount = dayRate ?? Number(sub.product.basePrice.toString());
+    const frequency = complaintSub.product.frequency ?? 'DAILY';
+    const dayRate = await billingRepository.findDayRateForProduct(complaintSub.productId, dayOfWeek, frequency);
+    const creditAmount = dayRate ?? Number(complaintSub.product.basePrice.toString());
     const roundedCredit = Math.round(creditAmount * 100) / 100;
     const dateStr = dateForRate.toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -232,13 +352,13 @@ export async function generateInvoice(
       year: 'numeric',
     });
     invoiceItems.push({
-      productId: sub.productId,
-      description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${sub.product.name})`,
+      productId: complaintSub.productId,
+      description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${complaintSub.product.name})`,
       quantity: 1,
       unitPrice: -roundedCredit,
       amount: -roundedCredit,
     });
-    totalComplaintCredit += roundedCredit;
+
   }
 
   const unresolvedComplaints = await billingRepository.findUnresolvedComplaintsInPeriod(
@@ -477,7 +597,6 @@ export async function generateCancellationInvoice(
     return null;
   }
 
-  const productDayRateMap = new Map<string, Map<number, number>>();
   const invoiceItems: {
     productId: string | null;
     description: string;
@@ -486,60 +605,15 @@ export async function generateCancellationInvoice(
     amount: number;
   }[] = [];
 
-  const { productId } = sub;
-  if (!productDayRateMap.has(productId)) {
-    const rates = await billingRepository.findProductDayRates(productId);
-    const rateMap = new Map<number, number>();
-    for (const rate of rates) {
-      rateMap.set(rate.dayOfWeek, Number(rate.price.toString()));
-    }
-    productDayRateMap.set(productId, rateMap);
-  }
-  const dayRates = productDayRateMap.get(productId)!;
-  const basePrice = Number(sub.product.basePrice.toString());
-
-  const pausePeriods: { start: Date; end: Date }[] = sub.pauses.map((p) => ({
-    start: p.startDate,
-    end: p.endDate,
-  }));
-
-  const startNorm = new Date(sub.startDate);
-  startNorm.setHours(0, 0, 0, 0);
-  const subStart = startNorm > periodStart ? startNorm : periodStart;
-  const endNorm = sub.endDate ? new Date(sub.endDate) : null;
-  if (endNorm) endNorm.setHours(23, 59, 59, 999);
-  const subEnd = endNorm && endNorm < periodEnd ? endNorm : periodEnd;
-
-  let billableCount = 0;
-  let totalProductAmount = 0;
-
-  const totalDays = new Date(year, month, 0).getDate();
-  for (let day = 1; day <= totalDays; day += 1) {
-    const currentDate = new Date(year, month - 1, day);
-    if (currentDate < subStart || currentDate > subEnd) {
-      continue;
-    }
-
-    const isPaused = pausePeriods.some(
-      (pause) => currentDate >= pause.start && currentDate <= pause.end
-    );
-    if (isPaused) {
-      continue;
-    }
-
-    billableCount += 1;
-    const dayOfWeek = currentDate.getDay();
-    const dayRate = dayRates.get(dayOfWeek);
-    totalProductAmount += dayRate ?? basePrice;
-  }
+  const { billableCount, totalAmount: productTotalAmount, description } = await calculateProductAmount(sub, { customerId, billingMonth: month, billingYear: year }, periodStart, periodEnd);
 
   if (billableCount > 0) {
     invoiceItems.push({
       productId: sub.productId,
-      description: `${sub.product.name} (${billableCount} days)`,
+      description,
       quantity: billableCount,
-      unitPrice: Math.round((totalProductAmount / billableCount) * 100) / 100,
-      amount: Math.round(totalProductAmount * 100) / 100,
+      unitPrice: Math.round((productTotalAmount / billableCount) * 100) / 100,
+      amount: Math.round(productTotalAmount * 100) / 100,
     });
   }
 
@@ -569,9 +643,20 @@ export async function generateCancellationInvoice(
   const subtotal = Math.round(invoiceItems.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
 
   const deliveryZone = await billingRepository.findPrimaryAddressZone(customerId, agencyId);
-  const deliveryCharges = deliveryZone
-    ? Math.round(Number(deliveryZone.monthlyCharge.toString()) * 100) / 100
-    : 0;
+  let deliveryCharges = 0;
+  if (deliveryZone) {
+    const monthlyCharge = Number(deliveryZone.monthlyCharge.toString());
+    const perDeliveryCharge = Number(deliveryZone.perDeliveryCharge.toString());
+
+    const frequency = sub.product.frequency ?? 'DAILY';
+    const totalDeliveries = getDeliveryCountForFrequency(frequency, year, month);
+
+    if (perDeliveryCharge > 0) {
+      deliveryCharges = Math.round(totalDeliveries * perDeliveryCharge * 100) / 100;
+    } else if (monthlyCharge > 0) {
+      deliveryCharges = Math.round(monthlyCharge * 100) / 100;
+    }
+  }
 
   const resolvedComplaints = await billingRepository.findResolvedComplaintsInPeriod(
     customerId,
@@ -580,14 +665,14 @@ export async function generateCancellationInvoice(
     periodEnd
   );
 
-  let totalComplaintCredit = 0;
   for (const complaint of resolvedComplaints) {
-    const sub = complaint.subscription;
-    if (!sub) continue;
+    const complaintSub = complaint.subscription;
+    if (!complaintSub) continue;
     const dateForRate = complaint.complaintDate ?? complaint.createdAt;
     const dayOfWeek = dateForRate.getDay();
-    const dayRate = await billingRepository.findDayRateForProduct(sub.productId, dayOfWeek);
-    const creditAmount = dayRate ?? Number(sub.product.basePrice.toString());
+    const frequency = complaintSub.product.frequency ?? 'DAILY';
+    const dayRate = await billingRepository.findDayRateForProduct(complaintSub.productId, dayOfWeek, frequency);
+    const creditAmount = dayRate ?? Number(complaintSub.product.basePrice.toString());
     const roundedCredit = Math.round(creditAmount * 100) / 100;
     const dateStr = dateForRate.toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -595,13 +680,12 @@ export async function generateCancellationInvoice(
       year: 'numeric',
     });
     invoiceItems.push({
-      productId: sub.productId,
-      description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${sub.product.name})`,
+      productId: complaintSub.productId,
+      description: `Credit: ${complaint.type.replace(/_/g, ' ')} on ${dateStr} (${complaintSub.product.name})`,
       quantity: 1,
       unitPrice: -roundedCredit,
       amount: -roundedCredit,
     });
-    totalComplaintCredit += roundedCredit;
   }
 
   const unresolvedComplaints = await billingRepository.findUnresolvedComplaintsInPeriod(

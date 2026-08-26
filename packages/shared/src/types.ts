@@ -10,6 +10,19 @@ export enum ProductType {
   BUNDLE = 'BUNDLE',
 }
 
+export enum ProductFrequency {
+  DAILY = 'DAILY',
+  WEEKLY = 'WEEKLY',
+  BIWEEKLY = 'BIWEEKLY',
+  MONTHLY = 'MONTHLY',
+  QUARTERLY = 'QUARTERLY',
+}
+
+export enum SubscriptionBillingCycle {
+  MONTHLY = 'MONTHLY',
+  YEARLY = 'YEARLY',
+}
+
 export enum SubscriptionStatus {
   ACTIVE = 'ACTIVE',
   PAUSED = 'PAUSED',

@@ -16,7 +16,10 @@ function toProductResponse(product: {
   name: string;
   description: string | null;
   type: string;
+  frequency: string;
   basePrice: { toString: () => string };
+  subscriptionMonthlyPrice: { toString: () => string } | null;
+  subscriptionYearlyPrice: { toString: () => string } | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -27,7 +30,10 @@ function toProductResponse(product: {
     name: product.name,
     description: product.description,
     type: product.type,
+    frequency: product.frequency,
     basePrice: Number(product.basePrice.toString()),
+    subscriptionMonthlyPrice: product.subscriptionMonthlyPrice ? Number(product.subscriptionMonthlyPrice.toString()) : null,
+    subscriptionYearlyPrice: product.subscriptionYearlyPrice ? Number(product.subscriptionYearlyPrice.toString()) : null,
     isActive: product.isActive,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
@@ -38,7 +44,8 @@ function toDayRateResponse(rate: {
   id: string;
   agencyId: string;
   productId: string;
-  dayOfWeek: number;
+  dayOfWeek: number | null;
+  frequency: string | null;
   price: { toString: () => string };
   createdAt: Date;
   updatedAt: Date;
@@ -48,6 +55,7 @@ function toDayRateResponse(rate: {
     agencyId: rate.agencyId,
     productId: rate.productId,
     dayOfWeek: rate.dayOfWeek,
+    frequency: rate.frequency,
     price: Number(rate.price.toString()),
     createdAt: rate.createdAt,
     updatedAt: rate.updatedAt,
@@ -171,8 +179,10 @@ export async function createDayRate(
   }
 
   const existing = await productRepository.listDayRates(productId, agencyId);
-  if (existing.some((r) => r.dayOfWeek === dto.dayOfWeek)) {
-    throw new ConflictError('Day rate already exists for this day of week');
+  const dayOfWeek = dto.dayOfWeek ?? 0;
+  const frequency = dto.frequency ?? 'DAILY';
+  if (existing.some((r) => r.dayOfWeek === dayOfWeek && r.frequency === frequency)) {
+    throw new ConflictError('Rate already exists for this day of week and frequency');
   }
 
   const rate = await productRepository.createDayRate({
@@ -193,7 +203,9 @@ export async function upsertDayRate(
     throw new NotFoundError('Product');
   }
 
-  const rate = await productRepository.upsertDayRate(productId, agencyId, dto.dayOfWeek, dto.price);
+  const dayOfWeek = dto.dayOfWeek ?? 0;
+  const frequency = dto.frequency ?? 'DAILY';
+  const rate = await productRepository.upsertDayRate(productId, agencyId, dayOfWeek, frequency, dto.price);
   return toDayRateResponse(rate);
 }
 

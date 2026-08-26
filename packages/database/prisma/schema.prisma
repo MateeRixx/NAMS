@@ -19,6 +19,19 @@ enum ProductType {
   BUNDLE
 }
 
+enum ProductFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
+enum SubscriptionBillingCycle {
+  MONTHLY
+  YEARLY
+}
+
 enum SubscriptionStatus {
   ACTIVE
   PAUSED
@@ -213,13 +226,14 @@ model Address {
 }
 
 model DeliveryZone {
-  id            String   @id @default(uuid())
-  agencyId      String
-  name          String
-  description   String?
-  monthlyCharge Decimal  @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                String   @id @default(uuid())
+  agencyId          String
+  name              String
+  description       String?
+  monthlyCharge     Decimal  @default(0)
+  perDeliveryCharge Decimal  @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   agency    Agency                    @relation(fields: [agencyId], references: [id])
   addresses Address[]
@@ -252,17 +266,20 @@ model BillingCharge {
 }
 
 model Product {
-  id          String      @id @default(uuid())
-  agencyId    String
-  name        String
-  description String?
-  type        ProductType @default(NEWSPAPER)
-  basePrice   Decimal
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                       String            @id @default(uuid())
+  agencyId                 String
+  name                     String
+  description              String?
+  type                     ProductType       @default(NEWSPAPER)
+  frequency                ProductFrequency  @default(DAILY)
+  basePrice                Decimal
+  subscriptionMonthlyPrice Decimal?
+  subscriptionYearlyPrice  Decimal?
+  isActive                 Boolean           @default(true)
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
 
-  agency           Agency            @relation(fields: [agencyId], references: [id])
+  agency           Agency                @relation(fields: [agencyId], references: [id])
   dayRates         ProductDayRate[]
   subscriptions    Subscription[]
   articleRequests  ArticleRequest[]
@@ -273,31 +290,33 @@ model Product {
 }
 
 model ProductDayRate {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   agencyId  String
   productId String
-  dayOfWeek Int
+  dayOfWeek Int?             @default(0)
+  frequency ProductFrequency @default(DAILY)
   price     Decimal
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   agency  Agency  @relation(fields: [agencyId], references: [id])
 
-  @@unique([productId, dayOfWeek])
+  @@unique([productId, dayOfWeek, frequency])
   @@index([productId])
 }
 
 model Subscription {
-  id        String             @id @default(uuid())
-  agencyId  String
-  customerId String
-  productId String
-  startDate DateTime
-  endDate   DateTime?
-  status    SubscriptionStatus @default(ACTIVE)
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id              String                   @id @default(uuid())
+  agencyId        String
+  customerId      String
+  productId       String
+  startDate       DateTime
+  endDate         DateTime?
+  status          SubscriptionStatus       @default(ACTIVE)
+  billingCycle    SubscriptionBillingCycle @default(MONTHLY)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
 
   agency   Agency              @relation(fields: [agencyId], references: [id])
   customer Customer            @relation(fields: [customerId], references: [id])

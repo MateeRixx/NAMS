@@ -6,6 +6,7 @@ export async function createSubscription(data: {
   agencyId: string;
   startDate: Date;
   endDate?: Date;
+  billingCycle?: 'MONTHLY' | 'YEARLY';
 }) {
   return prisma.subscription.create({ data: data as never });
 }

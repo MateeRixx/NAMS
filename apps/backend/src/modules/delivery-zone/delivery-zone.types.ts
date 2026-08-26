@@ -1,13 +1,15 @@
 export interface CreateDeliveryZoneDto {
   name: string;
   description?: string;
-  monthlyCharge: number;
+  monthlyCharge?: number;
+  perDeliveryCharge?: number;
 }
 
 export interface UpdateDeliveryZoneDto {
   name?: string;
   description?: string;
   monthlyCharge?: number;
+  perDeliveryCharge?: number;
 }
 
 export interface DeliveryZoneResponse {
@@ -16,6 +18,7 @@ export interface DeliveryZoneResponse {
   name: string;
   description: string | null;
   monthlyCharge: number;
+  perDeliveryCharge: number;
   createdAt: Date;
   updatedAt: Date;
 }

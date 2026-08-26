@@ -1,5 +1,7 @@
 import prisma from '@newsflow/database';
 
+type ProductFrequency = 'DAILY' | 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY';
+
 export async function findExistingInvoice(
   customerId: string,
   agencyId: string,
@@ -39,10 +41,15 @@ export async function findActiveSubscriptionsInPeriod(
 
 export async function findDayRateForProduct(
   productId: string,
-  dayOfWeek: number
+  dayOfWeek: number,
+  frequency?: string
 ): Promise<number | null> {
-  const rate = await prisma.productDayRate.findUnique({
-    where: { productId_dayOfWeek: { productId, dayOfWeek } },
+  const rate = await prisma.productDayRate.findFirst({
+    where: {
+      productId,
+      dayOfWeek,
+      frequency: (frequency ?? 'DAILY') as ProductFrequency,
+    },
     select: { price: true },
   });
   return rate ? Number(rate.price.toString()) : null;
@@ -77,7 +84,7 @@ export async function findResolvedComplaintsInPeriod(
     },
     include: {
       subscription: {
-        include: { product: { select: { id: true, name: true, basePrice: true } } },
+        include: { product: { select: { id: true, name: true, basePrice: true, frequency: true } } },
       },
     },
   });

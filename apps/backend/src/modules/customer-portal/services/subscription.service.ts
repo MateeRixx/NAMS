@@ -102,21 +102,52 @@ export async function getDashboard(customerId: string, agencyId: string): Promis
 
 function computeMonthlyCost(product: {
   basePrice: { toString: () => string };
-  dayRates?: { dayOfWeek: number; price: { toString: () => string } }[];
+  frequency?: string;
+  dayRates?: { dayOfWeek: number | null; frequency: string | null; price: { toString: () => string } }[];
 }): number {
   const basePrice = Number(product.basePrice.toString());
+  const frequency = product.frequency ?? 'DAILY';
   const dayRateMap = new Map<number, number>();
   for (const r of product.dayRates ?? []) {
-    dayRateMap.set(r.dayOfWeek, Number(r.price.toString()));
+    if (r.frequency === frequency && r.dayOfWeek !== null) {
+      dayRateMap.set(r.dayOfWeek, Number(r.price.toString()));
+    }
   }
 
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   let total = 0;
-  for (let d = 1; d <= daysInMonth(year, month); d++) {
+  const totalDays = daysInMonth(year, month);
+  
+  for (let d = 1; d <= totalDays; d++) {
     const current = new Date(year, month - 1, d);
-    total += dayRateMap.get(current.getDay()) ?? basePrice;
+    const dayOfWeek = current.getDay();
+    
+    let shouldBill = false;
+    switch (frequency) {
+      case 'DAILY':
+        shouldBill = true;
+        break;
+      case 'WEEKLY':
+        shouldBill = dayOfWeek === 0;
+        break;
+      case 'BIWEEKLY':
+        shouldBill = dayOfWeek === 0 && Math.floor((d - 1) / 7) % 2 === 0;
+        break;
+      case 'MONTHLY':
+        shouldBill = d === 1;
+        break;
+      case 'QUARTERLY':
+        shouldBill = d === 1 && (month - 1) % 3 === 0;
+        break;
+      default:
+        shouldBill = true;
+    }
+    
+    if (shouldBill) {
+      total += dayRateMap.get(dayOfWeek) ?? basePrice;
+    }
   }
   return Math.round(total * 100) / 100;
 }
@@ -126,10 +157,13 @@ export async function listProducts(agencyId: string): Promise<
     id: string;
     name: string;
     type: string;
+    frequency: string;
     basePrice: number;
+    subscriptionMonthlyPrice: number | null;
+    subscriptionYearlyPrice: number | null;
     description: string | null;
     estimatedMonthlyCost: number;
-    dayRates: { dayOfWeek: number; price: number }[];
+    dayRates: { dayOfWeek: number | null; frequency: string | null; price: number }[];
   }[]
 > {
   const products = await prisma.product.findMany({
@@ -142,18 +176,21 @@ export async function listProducts(agencyId: string): Promise<
     id: p.id,
     name: p.name,
     type: p.type,
+    frequency: p.frequency,
     basePrice: Number(p.basePrice),
+    subscriptionMonthlyPrice: p.subscriptionMonthlyPrice ? Number(p.subscriptionMonthlyPrice) : null,
+    subscriptionYearlyPrice: p.subscriptionYearlyPrice ? Number(p.subscriptionYearlyPrice) : null,
     description: p.description,
     estimatedMonthlyCost: computeMonthlyCost(p),
-    dayRates: p.dayRates.map((dr) => ({ dayOfWeek: dr.dayOfWeek, price: Number(dr.price) })),
+    dayRates: p.dayRates.map((dr) => ({ dayOfWeek: dr.dayOfWeek, frequency: dr.frequency, price: Number(dr.price) })),
   }));
 }
 
 export async function createSubscription(
   customerId: string,
   agencyId: string,
-  data: { productId: string; startDate?: string }
-): Promise<{ id: string; productId: string; status: string; startDate: Date }> {
+  data: { productId: string; startDate?: string; billingCycle?: 'MONTHLY' | 'YEARLY' }
+): Promise<{ id: string; productId: string; status: string; startDate: Date; billingCycle: string }> {
   const customer = await prisma.customer.findFirst({
     where: { id: customerId, agencyId, deletedAt: null },
   });
@@ -170,6 +207,7 @@ export async function createSubscription(
   if (existing) throw new Error('Already subscribed to this product');
 
   const startDate = data.startDate ? new Date(data.startDate) : new Date();
+  const billingCycle = data.billingCycle ?? 'MONTHLY';
 
   const subscription = await prisma.subscription.create({
     data: {
@@ -177,6 +215,7 @@ export async function createSubscription(
       customerId,
       productId: data.productId,
       startDate,
+      billingCycle,
       status: 'ACTIVE',
     },
   });
@@ -203,6 +242,7 @@ export async function createSubscription(
     productId: subscription.productId,
     status: subscription.status,
     startDate: subscription.startDate,
+    billingCycle: subscription.billingCycle,
   };
 }
 

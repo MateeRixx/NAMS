@@ -3,6 +3,7 @@ export interface CreateSubscriptionDto {
   productId: string;
   startDate?: string;
   endDate?: string;
+  billingCycle?: 'MONTHLY' | 'YEARLY';
 }
 
 export interface PauseSubscriptionDto {

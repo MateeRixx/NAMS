@@ -82,6 +82,7 @@ export async function createSubscription(
 
   const startDate = dto.startDate ? new Date(dto.startDate) : new Date();
   const endDate = dto.endDate ? new Date(dto.endDate) : undefined;
+  const billingCycle = dto.billingCycle ?? 'MONTHLY';
 
   const sub = await subscriptionRepository.createSubscription({
     customerId: dto.customerId,
@@ -89,6 +90,7 @@ export async function createSubscription(
     agencyId,
     startDate,
     endDate,
+    billingCycle,
   });
 
   const cust = await subscriptionRepository.findCustomerById(dto.customerId, agencyId);
